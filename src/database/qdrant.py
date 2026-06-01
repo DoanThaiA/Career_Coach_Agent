@@ -26,8 +26,8 @@ logger = get_logger(__name__)
 @dataclass
 class QdrantConfig:
     """Cau hinh cho Qdrant"""
-    url: str = f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}"
-    api_key: str = settings.QDRANT_API_KEY
+    host: str = settings.QDRANT_HOST
+    port: int = settings.QDRANT_PORT
     collection_name: str = settings.QDRANT_COLLECTION_NAME
 
     dense_size: int = settings.VECTOR_DIMENSION  
@@ -63,8 +63,9 @@ class QdrantDocumentStore:
         self.config = config
         self.embedding_service = embedding_service
         self.client = AsyncQdrantClient(
-            url=self.config.url,
-            api_key=self.config.api_key,
+            host=self.config.host,
+            grpc_port=self.config.port,
+            prefer_grpc=True,
             timeout=60,
         )
 

@@ -19,7 +19,7 @@ class EmbeddingService:
         Embed a list of texts into vectors.
         """
         formatted_texts = [f"passage: {text}" for text in texts]
-        return await self.embedding.aembed_documents(formatted_texts)
+        return await self.embeddings.aembed_documents(formatted_texts)
 
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
@@ -35,5 +35,5 @@ class EmbeddingService:
         Returns:
             List[float]: The vector representation of the query."""
         formatted_query = f"query: {query}"
-        return await self.embedding.aembed_query(formatted_query)
+        return await self.embeddings.aembed_query(formatted_query)
         
