@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     QDRANT_PORT: int
     QDRANT_COLLECTION_NAME: str
     
+    LLM_BASE_URL:str
+    LLM_MODEL_QWEN25:str
+    LLM_API_KEY:str
+    LLM_MAX_TOKENS: int
+
     VECTOR_DIMENSION: int
     EMBEDDING_MODEL: str
     OLLAMA_BASE_URL: str

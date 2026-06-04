@@ -27,10 +27,7 @@ def _init_services():
     from src.database.qdrant import QdrantDocumentStore, QdrantConfig
 
     if not hasattr(_init_services, "_cache"):
-        # Make sure the loop is created before initializing services
-        # that might bind to the current event loop.
         get_or_create_loop()
-        
         extract_svc = DocumentExtractService()
         chunking_svc = ChunkingService()
         embedding_svc = EmbeddingService()
