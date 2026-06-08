@@ -1,12 +1,3 @@
-"""Script chạy evaluation agent với dữ liệu mẫu để rà soát kết quả.
-
-Cách chạy:
-    python -m tests.run_evaluation_agent
-
-Yêu cầu:
-    - LLM server đang chạy tại LLM_BASE_URL (xem .env)
-    - Đã cài đủ dependencies (uv sync)
-"""
 
 import asyncio
 import json
@@ -22,103 +13,34 @@ logger = get_logger(__name__)
 SAMPLE_CV = """
 ĐOÀN QUỐC THÁI
 Email: thai.dq@example.com | SĐT: 0901234567
-LinkedIn: linkedin.com/in/thaidq
 
-============================================
-HỌC VẤN
-============================================
-Cử nhân Công nghệ Thông tin
-Đại học Bách Khoa TP.HCM — Tốt nghiệp 2020
-GPA: 7.8/10
+HỌC VẤN:
+Cử nhân CNTT, Đại học Bách Khoa (2020)
 
-============================================
-KINH NGHIỆM LÀM VIỆC
-============================================
+KINH NGHIỆM:
+Backend Developer — Công ty ABC (01/2021 - Hiện tại)
+- Xây dựng hệ thống RESTful API với FastAPI phục vụ 10,000 users/ngày
+- Tối ưu truy vấn SQL giúp giảm 30% thời gian phản hồi
+- Áp dụng Docker để triển khai ứng dụng
 
-Senior Backend Developer — Công ty XYZ Tech (07/2023 - Hiện tại)
-- Dẫn dắt team 5 người phát triển hệ thống microservices xử lý 50,000 requests/giây
-- Thiết kế và triển khai CI/CD pipeline với GitHub Actions, giảm 60% thời gian deploy
-- Tối ưu hóa kiến trúc hệ thống, giảm chi phí AWS hàng tháng 25% (~$3,000/tháng)
-- Xây dựng hệ thống monitoring với Prometheus + Grafana
-
-Backend Developer — Công ty ABC Solutions (01/2021 - 06/2023)
-- Xây dựng RESTful API với FastAPI phục vụ 10,000 users/ngày
-- Tối ưu hóa truy vấn SQL phức tạp, giảm 30% thời gian tải trang
-- Phát triển tính năng mới cho hệ thống e-commerce
-- Tham gia vào quá trình review code và mentor junior developers
-- Viết unit test và integration test cho các module chính
-
-Intern — Công ty DEF (06/2020 - 12/2020)
-- Hỗ trợ team phát triển dashboard admin bằng ReactJS
-- Tìm hiểu và áp dụng Docker cho môi trường development
-
-============================================
-KỸ NĂNG
-============================================
-Ngôn ngữ lập trình: Python (5 năm), JavaScript (3 năm), SQL
-Framework: FastAPI, Django, ReactJS, NextJS
-Database: PostgreSQL, MongoDB, Redis
-DevOps: Docker, Kubernetes, AWS (EC2, S3, RDS, Lambda), GitHub Actions
-Tools: Git, Jira, Confluence, Grafana, Prometheus
-Kỹ năng mềm: Leadership, Problem Solving, Communication
-
-============================================
-CHỨNG CHỈ
-============================================
-- AWS Solutions Architect Associate — Amazon (2024)
-- IELTS 7.0 (2022)
-
-============================================
-DỰ ÁN TIÊU BIỂU
-============================================
-
-Hệ thống E-commerce Platform (2023-2024)
-- Vai trò: Tech Lead
-- Mô tả: Thiết kế kiến trúc microservices cho nền tảng thương mại điện tử phục vụ 100K+ users
-- Công nghệ: Python, FastAPI, PostgreSQL, Redis, Docker, Kubernetes, AWS
-- Kết quả: Hệ thống xử lý 1,000+ đơn hàng/giờ, uptime 99.9%
-
-Real-time Chat System (2022)
-- Vai trò: Backend Developer
-- Mô tả: Xây dựng hệ thống chat real-time sử dụng WebSocket
-- Công nghệ: Python, FastAPI, Redis, WebSocket
+KỸ NĂNG:
+Python, FastAPI, SQL, Docker
 """
 
 SAMPLE_JD = """
-VỊ TRÍ TUYỂN DỤNG: SENIOR BACKEND DEVELOPER
-
-THÔNG TIN CHUNG:
-- Mức lương: 25-40 triệu VNĐ
-- Kinh nghiệm: 3+ năm
-- Hình thức: Full-time, On-site (TP.HCM)
+VỊ TRÍ TUYỂN DỤNG: BACKEND DEVELOPER
 
 YÊU CẦU BẮT BUỘC:
-- Tối thiểu 3 năm kinh nghiệm phát triển Backend với Python
-- Thành thạo FastAPI hoặc Django
-- Kinh nghiệm làm việc với PostgreSQL hoặc MySQL
-- Hiểu biết sâu về RESTful API design
-- Kinh nghiệm với Docker và containerization
-- Kinh nghiệm với Kubernetes (K8s) để orchestration
-- Có khả năng thiết kế hệ thống (System Design)
-- Tiếng Anh đọc hiểu tài liệu kỹ thuật
+- 2+ năm kinh nghiệm phát triển với Python
+- Thành thạo FastAPI
+- Kinh nghiệm làm việc với SQL/PostgreSQL
+- Kinh nghiệm với Docker
 
 YÊU CẦU ƯU TIÊN:
-- Kinh nghiệm với AWS (EC2, S3, RDS, Lambda)
-- Hiểu biết về Microservices Architecture
-- Kinh nghiệm với Message Queue (RabbitMQ, Kafka)
-- Kinh nghiệm với Redis
-- Có kinh nghiệm CI/CD pipeline
-- Kinh nghiệm mentoring junior developers
-
-YÊU CẦU HỌC VẤN:
-- Cử nhân Công nghệ Thông tin, Khoa học Máy tính hoặc tương đương
+- Có kinh nghiệm với AWS hoặc Redis
 
 MÔ TẢ CÔNG VIỆC:
-- Thiết kế và phát triển các hệ thống backend có khả năng mở rộng
-- Code review và đảm bảo chất lượng code
-- Tham gia vào quá trình thiết kế kiến trúc hệ thống
-- Mentoring và hỗ trợ junior developers
-- Viết technical documentation
+- Xây dựng API và tối ưu hóa hệ thống backend
 """
 
 

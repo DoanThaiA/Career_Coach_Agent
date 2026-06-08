@@ -1,43 +1,17 @@
 from src.core.logger import get_logger
-from src.utils import get_extraction_llm
+from src.utils import get_extraction_llm, generate_with_retry_and_correction, get_schema_instruction
 from src.agents.evaluation_agent.output_schema import CVInformation
 from src.agents.evaluation_agent.state import EvaluationState
 from src.agents.evaluation_agent.prompt import EXTRACT_PROMPT
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = get_logger(__name__)
-
-
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=10),
-    retry=retry_if_exception_type(Exception),
-    before_sleep=lambda retry_state: logger.warning(
-        f"Retry extractor_node lần {retry_state.attempt_number}: {retry_state.outcome.exception()}"
-    ),
-)
-async def _extract_with_retry(structured_llm, prompt: str) -> CVInformation:
-    """Gọi LLM có retry với exponential backoff."""
-    return await structured_llm.ainvoke(prompt)
-
-
-def _get_schema_instruction(schema_class) -> str:
-    """Tạo hướng dẫn JSON schema từ Pydantic model để LLM biết format cần trả."""
-    import json
-    schema = schema_class.model_json_schema()
-    return (
-        "\n\nHãy trả kết quả dưới dạng JSON hợp lệ theo đúng schema sau. "
-        "CHỈ trả JSON, KHÔNG thêm text giải thích bên ngoài.\n"
-        f"```json\n{json.dumps(schema, indent=2, ensure_ascii=False)}\n```"
-    )
 
 
 async def extractor_node(state: EvaluationState) -> dict:
     """Node bóc tách CV: text thô → CVInformation (structured).
     
-    Sử dụng extraction LLM (temperature thấp) để đảm bảo
-    bóc tách chính xác, không hallucinate dữ liệu.
-    Dùng method='json_mode' tương thích với LLM server local.
+    Gọi LLM trực tiếp và parse JSON thủ công thay vì dùng
+    with_structured_output (không tương thích LLM server local).
     """
     logger.info("▶ Bắt đầu xử lý extractor_node ...")
     cv_content = state.get("cv_content")
@@ -52,11 +26,9 @@ async def extractor_node(state: EvaluationState) -> dict:
 
     try:
         llm = get_extraction_llm()
-        # method="json_mode" tương thích tốt với LLM server local (MLX/Ollama)
-        structured_llm = llm.with_structured_output(CVInformation, method="json_mode")
-        # Thêm schema vào prompt để LLM biết format trả về
-        prompt = EXTRACT_PROMPT.format(cv_context=cv_content) + _get_schema_instruction(CVInformation)
-        cv_parsed = await _extract_with_retry(structured_llm, prompt)
+        prompt = EXTRACT_PROMPT.format(cv_context=cv_content.model_dump_json(indent=2, ensure_ascii=False)) + get_schema_instruction(CVInformation)
+        # Sử dụng cơ chế self-correction
+        cv_parsed = await generate_with_retry_and_correction(llm, prompt, CVInformation, max_retries=3)
 
         # Validation cơ bản
         if not cv_parsed.work_experience and not cv_parsed.skills and not cv_parsed.education:

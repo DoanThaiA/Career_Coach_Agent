@@ -4,6 +4,8 @@ from operator import add
 from src.agents.evaluation_agent.output_schema import (
     CVInformation,
     JDRequirements,
+    SkillEvaluationResult,
+    ExperienceEvaluationResult,
     EvaluationReport,
 )
 
@@ -23,6 +25,10 @@ class EvaluationState(TypedDict):
     # Intermediate (structured data)
     cv_parsed: Optional[CVInformation]
     jd_parsed: Optional[JDRequirements]
+    
+    # Intermediate (evaluation results)
+    skill_evaluation: Optional[SkillEvaluationResult]
+    experience_evaluation: Optional[ExperienceEvaluationResult]
 
     # Output
     eval_report: Optional[EvaluationReport]

@@ -37,6 +37,36 @@ HƯỚNG DẪN TƯ DUY VÀ XỬ LÝ DỮ LIỆU (BẮT BUỘC TUÂN THỦ):
 
 Hãy tập trung, đọc kỹ từng dòng văn bản CV dưới đây và bắt đầu bóc tách:
 {cv_context}
+
+═══════════════════════════════════════════
+VÍ DỤ MẪU (FEW-SHOT EXAMPLE)
+═══════════════════════════════════════════
+[Input CV (Trích đoạn)]:
+John Doe | 0901234567
+Kinh nghiệm: Backend Dev tại ABC (01/2021 - 12/2022). Phát triển API với FastAPI phục vụ 1000 users.
+Kỹ năng: Python, Docker.
+
+[Output JSON mong đợi (Minh họa cấu trúc)]:
+{{
+  "full_name": "Neymar Jr",
+  "phone": "0901234567",
+  "total_yoe": 5.0,
+  "work_experience": [
+    {{
+      "title": "DEV ", "company": "ABC", "start_date": "01/2021", "end_date": "12/2022",
+      "responsibilities": [
+        {{ "action": "Phát triển API với FastAPI", "metrics_or_results": "phục vụ 1000 users" }}
+      ]
+    }}
+  ],
+  "skills": {{
+    "technical_skills": [
+      {{ "name": "Python", "context": "Backend", "yoe": 2.0 }},
+      {{ "name": "FastAPI", "context": "Phát triển API", "yoe": 2.0 }},
+      {{ "name": "Docker", "context": null, "yoe": null }}
+    ]
+  }}
+}}
 """)
 
 
@@ -65,66 +95,167 @@ HƯỚNG DẪN BẮT BUỘC:
 
 Hãy phân tích JD dưới đây:
 {jd_context}
+
+═══════════════════════════════════════════
+VÍ DỤ MẪU (FEW-SHOT EXAMPLE)
+═══════════════════════════════════════════
+[Input JD (Trích đoạn)]:
+Tuyển dụng Backend Developer (2+ năm kinh nghiệm).
+Yêu cầu bắt buộc: Python, SQL.
+Ưu tiên: Có kinh nghiệm Docker là một lợi thế.
+
+[Output JSON mong đợi (Minh họa cấu trúc)]:
+{{
+  "job_title": "Backend Developer",
+  "min_years_experience": 2.0,
+  "skills": [
+    {{ "name": "Python", "priority": "must_have", "min_yoe": 2.0 }},
+    {{ "name": "SQL", "priority": "must_have", "min_yoe": null }},
+    {{ "name": "Docker", "priority": "nice_to_have", "min_yoe": null }}
+  ]
+}}
 """)
 
 
 # ──────────────────────────────────────────────
-# Prompt: Đánh giá CV vs JD
+# Prompt: Đánh giá Kỹ năng (Skill Matcher)
 # ──────────────────────────────────────────────
 
-EVAL_PROMPT = ChatPromptTemplate.from_template("""
-Bạn là một Giám đốc Kỹ thuật (CTO) và Chuyên gia Tuyển dụng IT cực kỳ khó tính, logic, và công bằng.
-Nhiệm vụ của bạn là đối chiếu năng lực của ứng viên (CV đã bóc tách) với yêu cầu công việc (JD đã phân tích).
+EVAL_SKILLS_PROMPT = ChatPromptTemplate.from_template("""
+Bạn là một Chuyên gia Đánh giá Kỹ năng Tuyển dụng IT.
+Nhiệm vụ của bạn là đối chiếu kỹ năng của ứng viên (CV đã bóc tách) với yêu cầu công việc (JD đã phân tích).
 
 ═══════════════════════════════════════════
-RUBRIC CHẤM ĐIỂM (Tổng 100 điểm)
+RUBRIC CHẤM ĐIỂM KỸ NĂNG (Tổng 55 điểm)
 ═══════════════════════════════════════════
+- Must-have Skills (40đ): Mỗi kỹ năng thiếu -10đ. Kỹ năng tương đương -3đ.
+- Nice-to-have Skills (15đ): Mỗi kỹ năng có +3đ.
 
-| Hạng mục                | Trọng số | Tiêu chí chi tiết                                                  |
-|--------------------------|----------|--------------------------------------------------------------------|
-| Must-have Skills         | 40%      | Mỗi must-have thiếu: -10đ. Kỹ năng tương đương: -3đ. Đầy đủ: 40đ |
-| Nice-to-have Skills      | 15%      | Mỗi nice-to-have có: +3đ (tối đa 15đ). Không có: 0đ              |
-| Kinh nghiệm (Depth)     | 25%      | Có metrics/impact: +5đ/mục. Chung chung: -3đ/mục. Max 25đ        |
-| Học vấn & Chứng chỉ     | 10%      | Phù hợp ngành: +7đ. Chứng chỉ liên quan: +3đ/cái (max 10đ)      |
-| Trình bày CV             | 10%      | Action verbs mạnh, XYZ formula, cấu trúc rõ ràng. Max 10đ        |
+NGUYÊN TẮC:
+1. KỸ NĂNG TƯƠNG ĐƯƠNG: Nếu JD yêu cầu kỹ năng A, nhưng CV có kỹ năng B cùng hệ sinh thái (VD: NextJS ≈ ReactJS), ghi rõ vào `equivalent_skill`.
+2. Trả về `matched = false` nếu hoàn toàn không có kỹ năng liên quan.
 
-═══════════════════════════════════════════
-NGUYÊN TẮC ĐÁNH GIÁ
-═══════════════════════════════════════════
-
-1. CHỈ đánh giá dựa trên dữ liệu JSON đã bóc tách. KHÔNG tự suy diễn hoặc bịa đặt kỹ năng.
-2. KỸ NĂNG TƯƠNG ĐƯƠNG: Nếu JD yêu cầu kỹ năng A, nhưng CV có kỹ năng B cùng hệ sinh thái, 
-   hãy coi như tương đương và ghi rõ trong equivalent_skill.
-   Ví dụ: NextJS ≈ ReactJS, FastAPI ≈ Flask, PostgreSQL ≈ MySQL, TypeScript ≈ JavaScript.
-3. TRỪNG PHẠT nặng nếu thiếu kỹ năng must-have. Ghi rõ lý do.
-4. TRỪNG PHẠT nếu kinh nghiệm viết chung chung, thiếu số liệu (Metrics). Đánh giá has_metrics = false.
-5. KHEN THƯỞNG nếu CV có impact statements rõ ràng với số liệu cụ thể.
-
-═══════════════════════════════════════════
-HƯỚNG DẪN VIẾT LẠI (Rewrite Suggestions)
-═══════════════════════════════════════════
-
-- Chỉ đề xuất viết lại cho các câu YẾU (thiếu metrics, dùng từ yếu, hoặc quá chung chung).
-- Sử dụng công thức XYZ của Google: "Đạt được [X], bằng cách [Y], dẫn đến kết quả [Z]".
-- Dùng action verbs mạnh: "Xây dựng", "Tối ưu hóa", "Dẫn dắt", "Triển khai" thay vì "Tham gia vào", "Hỗ trợ".
-
-═══════════════════════════════════════════
-PHÂN LOẠI KẾT QUẢ (Recommendation)
-═══════════════════════════════════════════
-
-- overall_score >= 70 → recommendation = "PASS"
-- 50 <= overall_score < 70 → recommendation = "CONSIDER"
-- overall_score < 50 → recommendation = "REJECT"
-
-═══════════════════════════════════════════
-DỮ LIỆU ĐẦU VÀO
-═══════════════════════════════════════════
-
-### JD đã phân tích (Structured):
+### JD đã phân tích:
 {jd_data}
 
-### CV đã bóc tách (Structured):
+### CV đã bóc tách:
 {cv_data}
 
-Hãy thực hiện đối chiếu chéo từng kỹ năng, đánh giá từng mục kinh nghiệm, và trả về báo cáo đánh giá JSON theo đúng schema đã định nghĩa.
+Trả về danh sách đối chiếu từng kỹ năng và điểm thành phần theo đúng schema.
+
+═══════════════════════════════════════════
+VÍ DỤ MẪU (FEW-SHOT EXAMPLE - TRÍCH ĐOẠN ĐẦU RA JSON)
+═══════════════════════════════════════════
+{{
+  "skill_analysis": [
+    {{
+      "skill_name": "Python", "matched": true, "is_must_have": true, 
+      "score": 10.0, "cv_evidence": "Có 2 năm kinh nghiệm làm Backend Python"
+    }}
+  ],
+  "score_breakdown": [
+    {{
+      "category": "Must-have Skills", "score": 100.0, "weight": 0.4, "weighted_score": 40.0,
+      "feedback": "Đáp ứng đầy đủ kỹ năng bắt buộc."
+    }}
+  ]
+}}
+""")
+
+
+EVAL_EXPERIENCE_PROMPT = ChatPromptTemplate.from_template("""
+Bạn là một Chuyên gia Đánh giá CV và Viết lách chuyên nghiệp.
+Nhiệm vụ của bạn là phân tích các đoạn mô tả kinh nghiệm làm việc của ứng viên để tìm ra các điểm yếu (thiếu số liệu, chung chung) và đề xuất cách viết lại.
+
+═══════════════════════════════════════════
+NGUYÊN TẮC ĐÁNH GIÁ & ĐỀ XUẤT
+═══════════════════════════════════════════
+1. Tìm các câu mô tả chung chung, thiếu Metrics (số liệu đo lường).
+2. Viết lại theo công thức XYZ: "Đạt được [X], bằng cách [Y], dẫn đến kết quả [Z]".
+3. Dùng Action Verbs mạnh: "Xây dựng", "Tối ưu hóa", "Dẫn dắt".
+
+### Yêu cầu JD (Để biết số năm kinh nghiệm tối thiểu):
+{jd_data}
+
+### Kinh nghiệm của ứng viên:
+{cv_data}
+
+═══════════════════════════════════════════
+VÍ DỤ MẪU (FEW-SHOT EXAMPLE - TRÍCH ĐOẠN ĐẦU RA JSON)
+═══════════════════════════════════════════
+{{
+  "experience_feedback": [
+    {{
+      "original_text": "Làm API cho web", "issue": "Quá chung chung, thiếu công nghệ và số liệu",
+      "has_metrics": false, "impact_score": 4.0
+    }}
+  ],
+  "rewrite_suggestions": [
+    {{
+      "original_text": "Làm API cho web",
+      "rewritten_text": "Xây dựng hệ thống RESTful API bằng FastAPI, tối ưu hóa thời gian phản hồi giảm 20%",
+      "improvement_reason": "Thêm framework sử dụng và metrics để tăng tính thuyết phục"
+    }}
+  ],
+  "score_breakdown": [
+    {{
+      "category": "Kinh nghiệm làm việc", "score": 60.0, "weight": 0.25, "weighted_score": 15.0,
+      "feedback": "Kinh nghiệm còn chung chung, thiếu số liệu chứng minh."
+    }}
+  ],
+  "experience_level_match": "Ứng viên có 2 năm kinh nghiệm, đáp ứng đủ yêu cầu JD."
+}}
+""")
+
+
+# ──────────────────────────────────────────────
+# Prompt: Tổng hợp kết quả (Final Scorer)
+# ──────────────────────────────────────────────
+
+EVAL_FINAL_PROMPT = ChatPromptTemplate.from_template("""
+Bạn là một Giám đốc Kỹ thuật (CTO). 
+Bạn đã nhận được kết quả phân tích kỹ năng và phân tích kinh nghiệm từ các trợ lý của mình.
+Nhiệm vụ của bạn là tổng hợp các kết quả đó thành một Bản Tổng hợp Đánh giá.
+
+LƯU Ý QUAN TRỌNG: Bạn KHÔNG cần sao chép skill_analysis hay experience_feedback.
+Hệ thống đã tự làm điều đó. Bạn CHỈ cần đưa ra:
+1. `overall_score`: Điểm tổng (0-100)
+2. `recommendation`: PASS (>=70) / CONSIDER (50-69) / REJECT (<50)
+3. `score_breakdown`: CHỈ chấm điểm cho hạng mục "Học vấn & Trình bày" (20% trọng số). Các hạng mục khác đã được chấm.
+4. `education_fit`: Đánh giá học vấn
+5. `strengths`: Danh sách điểm mạnh (tổng hợp từ tất cả dữ liệu)
+6. `weaknesses`: Danh sách điểm yếu (tổng hợp từ tất cả dữ liệu)
+7. `final_conclusion`: Kết luận tổng thể
+
+═══════════════════════════════════════════
+CÔNG THỨC TÍNH ĐIỂM (TỔNG 100 ĐIỂM)
+═══════════════════════════════════════════
+Điểm tổng (overall_score) = Tổng các weighted_score từ:
+1. Must-have Skills (40%) — Đã có từ phân tích kỹ năng
+2. Nice-to-have Skills (15%) — Đã có từ phân tích kỹ năng
+3. Kinh nghiệm làm việc (25%) — Đã có từ phân tích kinh nghiệm
+4. Học vấn & Trình bày (20%) — BẠN chấm điểm phần này
+
+### DỮ LIỆU ĐẦU VÀO:
+- Phân tích Kỹ năng: {skill_eval}
+- Phân tích Kinh nghiệm: {experience_eval}
+- Học vấn & Chứng chỉ ứng viên: {education_data}
+
+═══════════════════════════════════════════
+VÍ DỤ MẪU (FEW-SHOT EXAMPLE - ĐẦU RA JSON)
+═══════════════════════════════════════════
+{{
+  "overall_score": 78.0,
+  "recommendation": "PASS",
+  "score_breakdown": [
+    {{
+      "category": "Học vấn & Trình bày", "score": 70.0, "weight": 0.2, "weighted_score": 14.0,
+      "feedback": "Cử nhân CNTT phù hợp. CV trình bày khá tốt nhưng thiếu chứng chỉ."
+    }}
+  ],
+  "education_fit": "Cử nhân CNTT tại Bách Khoa, phù hợp với yêu cầu.",
+  "strengths": ["Kinh nghiệm solid với Python và FastAPI", "Có metrics rõ ràng"],
+  "weaknesses": ["Thiếu kinh nghiệm AWS", "Một số mô tả còn chung chung"],
+  "final_conclusion": "Ứng viên phù hợp tốt cho vị trí Backend Developer, đáp ứng các yêu cầu cốt lõi."
+}}
 """)

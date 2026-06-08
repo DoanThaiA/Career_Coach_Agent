@@ -191,6 +191,60 @@ class CategoryScore(BaseModel):
     feedback: str = Field(description="Nhận xét chi tiết cho hạng mục này")
 
 
+class SkillEvaluationResult(BaseModel):
+    skill_analysis: List[SkillMatch] = Field(
+        description="Phân tích chi tiết từng kỹ năng"
+    )
+    score_breakdown: List[CategoryScore] = Field(
+        description="Chi tiết điểm cho các hạng mục kỹ năng (Must-have, Nice-to-have)"
+    )
+
+
+class ExperienceEvaluationResult(BaseModel):
+    experience_feedback: List[ExperienceFeedback] = Field(
+        description="Nhận xét về từng mục kinh nghiệm"
+    )
+    rewrite_suggestions: List[RewriteSuggestion] = Field(
+        description="Đề xuất viết lại các câu yếu trong CV"
+    )
+    score_breakdown: List[CategoryScore] = Field(
+        description="Chi tiết điểm cho hạng mục Kinh nghiệm"
+    )
+    experience_level_match: Optional[str] = Field(
+        default=None,
+        description="Đánh giá số năm kinh nghiệm so với yêu cầu JD"
+    )
+
+
+
+class FinalSynthesis(BaseModel):
+    """Schema gọn cho eval_final_node.
+    
+    LLM chỉ cần sinh phần tổng hợp mới (strengths, weaknesses, conclusion,
+    education scoring). Phần skill_analysis và experience_feedback sẽ được
+    copy bằng Python code từ state, không qua LLM.
+    """
+    overall_score: float = Field(ge=0, le=100, description="Điểm tổng 0-100")
+    recommendation: Recommendation = Field(
+        description="Khuyến nghị: PASS (>=70), CONSIDER (50-69), REJECT (<50)"
+    )
+    score_breakdown: List[CategoryScore] = Field(
+        description="Chi tiết điểm cho Học vấn & Trình bày (chỉ phần chưa có)"
+    )
+    education_fit: Optional[str] = Field(
+        default=None, description="Đánh giá mức độ phù hợp của học vấn"
+    )
+    strengths: List[str] = Field(
+        description="Danh sách điểm mạnh nổi bật của ứng viên"
+    )
+    weaknesses: List[str] = Field(
+        description="Danh sách điểm yếu/thiếu sót chính"
+    )
+    final_conclusion: str = Field(
+        description="Kết luận tổng thể về mức độ phù hợp của ứng viên"
+    )
+
+
 class EvaluationReport(BaseModel):
     overall_score: float = Field(ge=0, le=100, description="Điểm tổng 0-100")
     recommendation: Recommendation = Field(

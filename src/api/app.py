@@ -1,9 +1,13 @@
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 from src.api.routes.document import router as document_router
+from src.api.routes.interview import router as interview_router
 from src.api.schemas import HealthResponse
 from src.core.logger import get_logger
 
@@ -37,6 +41,17 @@ def create_app() -> FastAPI:
 
     # ── Routes ──
     app.include_router(document_router, prefix="/api/v1")
+    app.include_router(interview_router, prefix="/api/v1")
+
+    # ── Static files (Test UI) ──
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+    if os.path.isdir(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/interview-test", include_in_schema=False)
+    async def interview_test_redirect():
+        """Redirect tiện lợi đến trang test Interview Agent."""
+        return RedirectResponse(url="/static/interview_test.html")
 
     # ── Health check ──
     @app.get("/health", response_model=HealthResponse, tags=["Health"])

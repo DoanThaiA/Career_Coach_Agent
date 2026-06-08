@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Agent — Test UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0f0f14;
+            --bg-secondary: #1a1a24;
+            --bg-card: #22223a;
+            --bg-input: #2a2a42;
+            --text-primary: #e8e8f0;
+            --text-secondary: #9a9ab0;
+            --text-muted: #6b6b80;
+            --accent: #6c5ce7;
+            --accent-hover: #7f70f0;
+            --accent-glow: rgba(108, 92, 231, 0.25);
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+            --border: rgba(255,255,255,0.06);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ── Layout ── */
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe, #74b9ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: border-color 0.3s;
+        }
+
+        .card:hover { border-color: rgba(108,92,231,0.2); }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h2 .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .icon-cv   { background: rgba(0,184,148,0.15); color: var(--success); }
+        .icon-jd   { background: rgba(108,92,231,0.15); color: var(--accent); }
+        .icon-chat { background: rgba(116,185,255,0.15); color: #74b9ff; }
+        .icon-report { background: rgba(253,203,110,0.15); color: var(--warning); }
+
+        /* ── Form elements ── */
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.88rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 22px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #7f70f0);
+            color: white;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px var(--accent-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-send {
+            background: linear-gradient(135deg, var(--success), #55efc4);
+            color: #0f0f14;
+            box-shadow: 0 4px 16px rgba(0,184,148,0.25);
+        }
+
+        .btn-send:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── Chat area ── */
+        .chat-area {
+            grid-column: 1 / -1;
+        }
+
+        .messages {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            min-height: 300px;
+            max-height: 480px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .messages::-webkit-scrollbar { width: 6px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: rgba(108,92,231,0.3); border-radius: 3px; }
+
+        .msg {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 10px;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .msg-ai .msg-avatar { background: linear-gradient(135deg, var(--accent), #a29bfe); color: white; }
+        .msg-human .msg-avatar { background: linear-gradient(135deg, var(--success), #55efc4); color: #0f0f14; }
+        .msg-system .msg-avatar { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+
+        .msg-body {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 10px 14px;
+            max-width: 80%;
+            font-size: 0.88rem;
+            line-height: 1.65;
+        }
+
+        .msg-human .msg-body {
+            background: rgba(0,184,148,0.1);
+            margin-left: auto;
+        }
+
+        .msg-system .msg-body {
+            background: rgba(253,203,110,0.08);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .msg-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .answer-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .answer-row textarea {
+            flex: 1;
+            min-height: 50px;
+        }
+
+        .answer-row .btn { width: auto; min-width: 110px; }
+
+        /* ── Status bar ── */
+        .status-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pill-idle       { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+        .pill-interviewing { background: rgba(108,92,231,0.15); color: var(--accent); }
+        .pill-completed  { background: rgba(0,184,148,0.15); color: var(--success); }
+        .pill-error      { background: rgba(225,112,85,0.15); color: var(--danger); }
+
+        .status-info {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .status-info strong { color: var(--text-primary); }
+
+        /* ── Report section ── */
+        .report-section {
+            grid-column: 1 / -1;
+        }
+
+        .report-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        .report-content h2 { font-size: 1.1rem; margin: 18px 0 8px; color: var(--accent); }
+        .report-content h3 { font-size: 0.95rem; margin: 14px 0 6px; color: var(--text-primary); }
+        .report-content ul { padding-left: 20px; }
+        .report-content li { margin-bottom: 4px; }
+
+        .decision-badge {
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 10px 0;
+        }
+
+        .decision-Pass    { background: rgba(0,184,148,0.15); color: var(--success); border: 1px solid rgba(0,184,148,0.3); }
+        .decision-Fail    { background: rgba(225,112,85,0.15); color: var(--danger); border: 1px solid rgba(225,112,85,0.3); }
+        .decision-Consider { background: rgba(253,203,110,0.15); color: var(--warning); border: 1px solid rgba(253,203,110,0.3); }
+
+        /* ── Loading ── */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none !important; }
+
+        /* ── JSON preview toggle ── */
+        .json-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .json-toggle:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        .json-preview {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            margin-top: 8px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            max-height: 200px;
+            overflow: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>🎤 Interview Agent — Test Console</h1>
+            <p>Human-in-the-Loop Interview Simulation</p>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            <span class="status-pill pill-idle" id="statusPill">IDLE</span>
+            <span class="status-info" id="statusText">Chưa bắt đầu phiên phỏng vấn</span>
+        </div>
+
+        <div style="height: 20px;"></div>
+
+        <!-- Setup Section -->
+        <div class="grid" id="setupSection">
+            <!-- CV Card -->
+            <div class="card">
+                <h2><span class="icon icon-cv">📄</span> Thông tin CV Ứng viên</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Họ tên</label>
+                        <input type="text" id="cv_name" value="Nguyễn Văn An" placeholder="Họ tên">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="cv_email" value="an.nguyen@email.com" placeholder="Email">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Số năm kinh nghiệm</label>
+                        <input type="number" id="cv_yoe" value="3" step="0.5" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Chức danh gần nhất</label>
+                        <input type="text" id="cv_title" value="Backend Developer" placeholder="VD: Senior Developer">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Kỹ năng chính (cách nhau bằng dấu phẩy)</label>
+                    <input type="text" id="cv_skills" value="Python, FastAPI, PostgreSQL, Docker, Redis" placeholder="Python, Java, React...">
+                </div>
+                <div class="form-group">
+                    <label>Mô tả kinh nghiệm (tóm tắt)</label>
+                    <textarea id="cv_experience" rows="3">3 năm kinh nghiệm phát triển backend với Python/FastAPI. Từng xây dựng hệ thống API xử lý 500 request/s. Có kinh nghiệm deploy Docker, CI/CD với GitHub Actions. Làm việc với PostgreSQL và Redis cache.</textarea>
+                </div>
+                <button class="json-toggle" onclick="togglePreview('cvPreview')">👁 Xem JSON</button>
+                <div class="json-preview hidden" id="cvPreview"></div>
+            </div>
+
+            <!-- JD Card -->
+            <div class="card">
+                <h2><span class="icon icon-jd">📋</span> Yêu cầu Công việc (JD)</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Vị trí tuyển dụng</label>
+                        <input type="text" id="jd_title" value="Senior Backend Developer" placeholder="VD: Senior Backend Developer">
+                    </div>
+                    <div class="form-group">
+                        <label>Cấp bậc</label>
+                        <select id="jd_level">
+                            <option value="Junior">Junior</option>
+                            <option value="Mid">Mid</option>
+                            <option value="Senior" selected>Senior</option>
+                            <option value="Lead">Lead</option>
+                            <option value="Manager">Manager</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Năm KN tối thiểu</label>
+                        <input type="number" id="jd_min_yoe" value="4" step="0.5" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Yêu cầu học vấn</label>
+                        <input type="text" id="jd_education" value="Cử nhân CNTT hoặc tương đương" placeholder="VD: Cử nhân CNTT">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Kỹ năng yêu cầu (must_have — cách nhau bằng dấu phẩy)</label>
+                    <input type="text" id="jd_must_skills" value="Python, FastAPI, PostgreSQL, System Design" placeholder="Python, Java...">
+                </div>
+                <div class="form-group">
+                    <label>Kỹ năng nice_to_have (cách nhau bằng dấu phẩy)</label>
+                    <input type="text" id="jd_nice_skills" value="Kubernetes, AWS, CI/CD" placeholder="Docker, K8s...">
+                </div>
+                <div class="form-group">
+                    <label>Trách nhiệm chính</label>
+                    <textarea id="jd_responsibilities" rows="3">Thiết kế và phát triển hệ thống backend scale lớn. Code review và mentoring junior. Tối ưu hiệu năng hệ thống. Làm việc với team DevOps để triển khai CI/CD.</textarea>
+                </div>
+                <button class="json-toggle" onclick="togglePreview('jdPreview')">👁 Xem JSON</button>
+                <div class="json-preview hidden" id="jdPreview"></div>
+            </div>
+        </div>
+
+        <div style="height: 16px;" id="startBtnSpacer"></div>
+
+        <!-- Start Button -->
+        <div id="startBtnContainer">
+            <button class="btn btn-primary" id="startBtn" onclick="startInterview()">
+                🚀 Bắt đầu Phỏng vấn
+            </button>
+        </div>
+
+        <div style="height: 24px;"></div>
+
+        <!-- Chat Section -->
+        <div class="grid">
+            <div class="card chat-area hidden" id="chatSection">
+                <h2><span class="icon icon-chat">💬</span> Phòng Phỏng vấn</h2>
+                <div class="messages" id="chatMessages">
+                    <!-- Messages rendered here -->
+                </div>
+                <div class="answer-row">
+                    <textarea id="answerInput" placeholder="Nhập câu trả lời của bạn..." onkeydown="handleAnswerKey(event)"></textarea>
+                    <button class="btn btn-send" id="sendBtn" onclick="sendAnswer()">
+                        ➤ Gửi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Section -->
+            <div class="card report-section hidden" id="reportSection">
+                <h2><span class="icon icon-report">📊</span> Kết quả Phỏng vấn</h2>
+                <div id="reportContent" class="report-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Config ──
+        const API_BASE = window.location.origin + '/api/v1/interview';
+        let currentThreadId = null;
+        let isProcessing = false;
+
+        // ── Helpers ──
+        function $(id) { return document.getElementById(id); }
+
+        function setStatus(status, text) {
+            const pill = $('statusPill');
+            pill.className = 'status-pill';
+            pill.classList.add(`pill-${status}`);
+            pill.textContent = status.toUpperCase();
+            $('statusText').innerHTML = text;
+        }
+
+        function addMessage(type, content, meta = '') {
+            const container = $('chatMessages');
+            const avatarMap = { ai: 'AI', human: 'Bạn', system: '⚙' };
+
+            const div = document.createElement('div');
+            div.className = `msg msg-${type}`;
+            div.innerHTML = `
+                <div class="msg-avatar">${avatarMap[type] || '?'}</div>
+                <div>
+                    <div class="msg-body">${escapeHtml(content)}</div>
+                    ${meta ? `<div class="msg-meta">${meta}</div>` : ''}
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function togglePreview(id) {
+            const el = $(id);
+            el.classList.toggle('hidden');
+            if (!el.classList.contains('hidden')) {
+                if (id === 'cvPreview') el.textContent = JSON.stringify(buildCvData(), null, 2);
+                if (id === 'jdPreview') el.textContent = JSON.stringify(buildJdData(), null, 2);
+            }
+        }
+
+        function setLoading(loading) {
+            isProcessing = loading;
+            $('sendBtn').disabled = loading;
+            $('startBtn').disabled = loading;
+            if (loading) {
+                $('sendBtn').innerHTML = '<span class="spinner"></span> Đang xử lý...';
+            } else {
+                $('sendBtn').innerHTML = '➤ Gửi';
+            }
+        }
+
+        // ── Build data payloads ──
+        function buildCvData() {
+            const skills = $('cv_skills').value.split(',').map(s => s.trim()).filter(Boolean);
+            return {
+                full_name: $('cv_name').value,
+                email: $('cv_email').value,
+                total_yoe: parseFloat($('cv_yoe').value) || 0,
+                work_experience: [{
+                    title: $('cv_title').value,
+                    company: "Công ty XYZ",
+                    start_date: "2021",
+                    end_date: "Hiện tại",
+                    responsibilities: [{
+                        action: $('cv_experience').value,
+                        metrics_or_results: null
+                    }]
+                }],
+                skills: {
+                    technical_skills: skills.map(s => ({ name: s, context: null, yoe: null })),
+                    hard_skills: null,
+                    soft_skills: null,
+                    languages: null
+                },
+                education: null,
+                projects: null,
+                certifications: null,
+                phone: null
+            };
+        }
+
+        function buildJdData() {
+            const mustSkills = $('jd_must_skills').value.split(',').map(s => s.trim()).filter(Boolean);
+            const niceSkills = $('jd_nice_skills').value.split(',').map(s => s.trim()).filter(Boolean);
+            const responsibilities = $('jd_responsibilities').value.split('\n').map(s => s.trim()).filter(Boolean);
+
+            const skills = [
+                ...mustSkills.map(s => ({ name: s, priority: 'must_have', min_yoe: null })),
+                ...niceSkills.map(s => ({ name: s, priority: 'nice_to_have', min_yoe: null })),
+            ];
+
+            return {
+                job_title: $('jd_title').value,
+                level: $('jd_level').value,
+                skills: skills,
+                min_years_experience: parseFloat($('jd_min_yoe').value) || null,
+                education_requirements: $('jd_education').value || null,
+                responsibilities: responsibilities.length ? responsibilities : null,
+                benefits_summary: null
+            };
+        }
+
+        // ── API calls ──
+        async function startInterview() {
+            if (isProcessing) return;
+            setLoading(true);
+
+            const payload = {
+                cv_parsed: buildCvData(),
+                jd_parsed: buildJdData()
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    setStatus('error', `Lỗi: ${data.detail || 'Unknown error'}`);
+                    setLoading(false);
+                    return;
+                }
+
+                currentThreadId = data.thread_id;
+
+                // Show chat, hide setup
+                $('chatSection').classList.remove('hidden');
+                $('setupSection').style.display = 'none';
+                $('startBtnContainer').style.display = 'none';
+                $('startBtnSpacer').style.display = 'none';
+
+                handleResponse(data);
+            } catch (e) {
+                setStatus('error', `Lỗi kết nối: ${e.message}`);
+            }
+            setLoading(false);
+        }
+
+        async function sendAnswer() {
+            if (isProcessing || !currentThreadId) return;
+
+            const answer = $('answerInput').value.trim();
+            if (!answer) return;
+
+            addMessage('human', answer);
+            $('answerInput').value = '';
+            setLoading(true);
+
+            try {
+                const res = await fetch(`${API_BASE}/answer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        thread_id: currentThreadId,
+                        answer: answer
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    addMessage('system', `❌ Lỗi: ${data.detail || 'Unknown error'}`);
+                    setLoading(false);
+                    return;
+                }
+
+                handleResponse(data);
+            } catch (e) {
+                addMessage('system', `❌ Lỗi kết nối: ${e.message}`);
+            }
+            setLoading(false);
+            $('answerInput').focus();
+        }
+
+        function handleResponse(data) {
+            if (data.status === 'interviewing') {
+                const topicInfo = data.current_topic
+                    ? `Chủ đề <strong>${data.topic_index + 1}/${data.total_topics}</strong>: ${data.current_topic}`
+                    : '';
+                setStatus('interviewing', topicInfo);
+
+                if (data.question) {
+                    const meta = data.current_topic ? `📌 ${data.current_topic}` : '';
+                    addMessage('ai', data.question, meta);
+                }
+
+            } else if (data.status === 'completed') {
+                setStatus('completed', `Phỏng vấn hoàn tất — Kết quả: <strong>${data.final_decision}</strong>`);
+
+                addMessage('system', `✅ Phỏng vấn kết thúc. Kết quả: ${data.final_decision}`);
+
+                // Show report
+                $('reportSection').classList.remove('hidden');
+                const badge = `<span class="decision-badge decision-${data.final_decision}">${data.final_decision}</span>`;
+                $('reportContent').innerHTML = badge + '\n' + (data.report || 'Không có báo cáo.');
+
+                // Disable input
+                $('answerInput').disabled = true;
+                $('sendBtn').disabled = true;
+
+            } else if (data.status === 'error') {
+                setStatus('error', data.error || 'Đã xảy ra lỗi');
+                addMessage('system', `❌ ${data.error || 'Lỗi không xác định'}`);
+            }
+        }
+
+        function handleAnswerKey(e) {
+            // Ctrl+Enter or Cmd+Enter to send
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                sendAnswer();
+            }
+        }
+    </script>
+</body>
+</html>
