@@ -4,6 +4,11 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
+class DocumentType(str, Enum):
+    GENERAL = "general"
+    CV = "cv"
+    JD = "jd"
+
 
 class ProcessDocumentRequest(BaseModel):
     """Request body khi gọi API bằng JSON (truyền file_path trực tiếp)."""

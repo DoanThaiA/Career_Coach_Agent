@@ -1,13 +1,14 @@
 import os
 import uuid
 import shutil
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
 
 from src.api.schemas import (
     ProcessDocumentRequest,
     TaskResponse,
     TaskResultResponse,
     TaskStatus,
+    DocumentType
 )
 from src.core.config import settings
 from src.core.logger import get_logger
@@ -38,7 +39,10 @@ def _validate_extension(filename: str) -> str:
     status_code=status.HTTP_202_ACCEPTED,
     summary="Upload file và gửi vào hàng đợi xử lý",
 )
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    doc_type: DocumentType = Form(DocumentType.GENERAL)
+):
     """Upload file tài liệu, lưu vào disk, gửi task xử lý vào Celery queue.
 
     - Giới hạn kích thước: {MAX_FILE_SIZE_MB} MB
@@ -68,8 +72,14 @@ async def upload_document(file: UploadFile = File(...)):
     logger.info(f"File uploaded: {file.filename} -> {file_path} ({len(content)} bytes)")
 
     # Gửi task vào Celery
-    from worker.tasks import process_document
-    task = process_document.delay(file_path)
+    from worker.tasks import process_document, process_cv, process_jd
+    
+    if doc_type == DocumentType.CV:
+        task = process_cv.delay(file_path)
+    elif doc_type == DocumentType.JD:
+        task = process_jd.delay(file_path)
+    else:
+        task = process_document.delay(file_path)
 
     return TaskResponse(
         task_id=task.id,
@@ -88,6 +98,8 @@ async def upload_document(file: UploadFile = File(...)):
 )
 async def process_document_by_path(request: ProcessDocumentRequest):
     """Gửi task xử lý cho file đã tồn tại trên server (không cần upload)."""
+    # Thêm hỗ trợ doc_type vào model ProcessDocumentRequest nếu cần
+    # Ở đây mặc định gọi luồng general để tương thích ngược.
     file_path = os.path.abspath(request.file_path)
 
     if not os.path.isfile(file_path):
@@ -149,3 +161,41 @@ async def revoke_task(task_id: str):
 
     logger.info(f"Task {task_id} đã được yêu cầu hủy")
     return {"task_id": task_id, "status": "REVOKED", "message": "Task đã được gửi lệnh hủy"}
+
+
+# ── GET /documents/cvs & /documents/jds ──
+
+@router.get("/cvs", summary="Lấy danh sách CV đã được xử lý")
+async def list_cvs():
+    from src.database.mongodb import MongoDBClient
+    cvs = await MongoDBClient.get_all_cvs()
+    return {"data": cvs}
+
+@router.get("/cvs/{cv_id}", summary="Lấy chi tiết 1 CV")
+async def get_cv(cv_id: str):
+    from src.database.mongodb import MongoDBClient
+    try:
+        cv = await MongoDBClient.get_cv_by_id(cv_id)
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV không tồn tại")
+        return {"data": cv}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/jds", summary="Lấy danh sách JD đã được xử lý")
+async def list_jds():
+    from src.database.mongodb import MongoDBClient
+    jds = await MongoDBClient.get_all_jds()
+    return {"data": jds}
+
+@router.get("/jds/{jd_id}", summary="Lấy chi tiết 1 JD")
+async def get_jd(jd_id: str):
+    from src.database.mongodb import MongoDBClient
+    try:
+        jd = await MongoDBClient.get_jd_by_id(jd_id)
+        if not jd:
+            raise HTTPException(status_code=404, detail="JD không tồn tại")
+        return {"data": jd}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

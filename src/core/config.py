@@ -6,6 +6,15 @@ class Settings(BaseSettings):
     QDRANT_PORT: int
     QDRANT_COLLECTION_NAME: str
     
+    LLM_BASE_URL:str
+    LLM_MODEL_QWEN25:str
+    LLM_API_KEY:str
+    LLM_MAX_TOKENS: int
+
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_HOST: str = "http://localhost:3000"
+
     VECTOR_DIMENSION: int
     EMBEDDING_MODEL: str
     OLLAMA_BASE_URL: str
