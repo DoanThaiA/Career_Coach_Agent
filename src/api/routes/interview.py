@@ -128,7 +128,12 @@ async def start_interview(request: InterviewStartRequest):
         )
 
     graph = _get_graph()
+    
+    from src.core.monitoring import get_langfuse_handler
+    langfuse_handler = get_langfuse_handler(session_id=thread_id)
     config = {"configurable": {"thread_id": thread_id}}
+    if langfuse_handler:
+        config["callbacks"] = [langfuse_handler]
 
     initial_state = {
         "cv_parsed": cv_info,
@@ -190,7 +195,12 @@ async def answer_question(request: InterviewAnswerRequest):
     """
     thread_id = request.thread_id
     graph = _get_graph()
+    
+    from src.core.monitoring import get_langfuse_handler
+    langfuse_handler = get_langfuse_handler(session_id=thread_id)
     config = {"configurable": {"thread_id": thread_id}}
+    if langfuse_handler:
+        config["callbacks"] = [langfuse_handler]
 
     # Kiểm tra thread tồn tại
     current_state = graph.get_state(config)

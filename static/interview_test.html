@@ -38,373 +38,103 @@
             line-height: 1.6;
         }
 
-        /* ── Layout ── */
-        .app {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 32px 20px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 36px;
-        }
-
+        .app { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+        header { text-align: center; margin-bottom: 36px; }
         header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.8rem; font-weight: 700;
             background: linear-gradient(135deg, #6c5ce7, #a29bfe, #74b9ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
         }
+        header p { color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px; }
 
-        header p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-top: 6px;
-        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-
-        /* ── Cards ── */
         .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            box-shadow: var(--shadow);
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
             transition: border-color 0.3s;
         }
-
         .card:hover { border-color: rgba(108,92,231,0.2); }
-
-        .card h2 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card h2 .icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-
+        .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card h2 .icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+        
         .icon-cv   { background: rgba(0,184,148,0.15); color: var(--success); }
         .icon-jd   { background: rgba(108,92,231,0.15); color: var(--accent); }
         .icon-chat { background: rgba(116,185,255,0.15); color: #74b9ff; }
         .icon-report { background: rgba(253,203,110,0.15); color: var(--warning); }
 
-        /* ── Form elements ── */
-        label {
-            display: block;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
+        label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
         input, textarea, select {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.88rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
+            width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text-primary);
+            font-family: inherit; font-size: 0.88rem; outline: none; margin-bottom: 14px;
         }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
-        input:focus, textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        textarea { resize: vertical; min-height: 80px; }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .form-group { margin-bottom: 14px; }
-
-        /* ── Buttons ── */
+        .upload-row { display: flex; gap: 8px; margin-bottom: 14px; }
+        .upload-row input[type="file"] { margin-bottom: 0; flex: 1; padding: 7px; }
+        
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 11px 22px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 11px 22px; border: none; border-radius: var(--radius-sm);
+            font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
         }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #7f70f0); color: white; box-shadow: 0 4px 16px var(--accent-glow); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); width: auto; padding: 7px 14px; }
+        .btn-outline:hover { background: rgba(108,92,231,0.1); }
+        .btn-send { background: linear-gradient(135deg, var(--success), #55efc4); color: #0f0f14; }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #7f70f0);
-            color: white;
-            box-shadow: 0 4px 16px var(--accent-glow);
-        }
+        .status-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; }
+        .status-pill { padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .pill-idle { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+        .pill-interviewing { background: rgba(108,92,231,0.15); color: var(--accent); }
+        .pill-completed { background: rgba(0,184,148,0.15); color: var(--success); }
+        .pill-error { background: rgba(225,112,85,0.15); color: var(--danger); }
+        .status-info { font-size: 0.82rem; color: var(--text-secondary); }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 24px var(--accent-glow);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-send {
-            background: linear-gradient(135deg, var(--success), #55efc4);
-            color: #0f0f14;
-            box-shadow: 0 4px 16px rgba(0,184,148,0.25);
-        }
-
-        .btn-send:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* ── Chat area ── */
-        .chat-area {
-            grid-column: 1 / -1;
-        }
-
-        .messages {
-            background: var(--bg-card);
-            border-radius: var(--radius);
-            padding: 20px;
-            min-height: 300px;
-            max-height: 480px;
-            overflow-y: auto;
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-        }
-
-        .messages::-webkit-scrollbar { width: 6px; }
-        .messages::-webkit-scrollbar-track { background: transparent; }
-        .messages::-webkit-scrollbar-thumb { background: rgba(108,92,231,0.3); border-radius: 3px; }
-
-        .msg {
-            margin-bottom: 16px;
-            display: flex;
-            gap: 10px;
-            animation: fadeInUp 0.3s ease;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .msg-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-            font-weight: 700;
-        }
-
+        .chat-area { grid-column: 1 / -1; }
+        .messages { background: var(--bg-card); border-radius: var(--radius); padding: 20px; min-height: 300px; max-height: 480px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border); }
+        .msg { margin-bottom: 16px; display: flex; gap: 10px; }
+        .msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
         .msg-ai .msg-avatar { background: linear-gradient(135deg, var(--accent), #a29bfe); color: white; }
         .msg-human .msg-avatar { background: linear-gradient(135deg, var(--success), #55efc4); color: #0f0f14; }
         .msg-system .msg-avatar { background: rgba(255,255,255,0.1); color: var(--text-muted); }
-
-        .msg-body {
-            background: rgba(255,255,255,0.04);
-            border-radius: 12px;
-            padding: 10px 14px;
-            max-width: 80%;
-            font-size: 0.88rem;
-            line-height: 1.65;
-        }
-
-        .msg-human .msg-body {
-            background: rgba(0,184,148,0.1);
-            margin-left: auto;
-        }
-
-        .msg-system .msg-body {
-            background: rgba(253,203,110,0.08);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        .msg-meta {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .answer-row {
-            display: flex;
-            gap: 12px;
-        }
-
-        .answer-row textarea {
-            flex: 1;
-            min-height: 50px;
-        }
-
+        .msg-body { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 10px 14px; max-width: 80%; font-size: 0.88rem; line-height: 1.65; }
+        .msg-human .msg-body { background: rgba(0,184,148,0.1); margin-left: auto; }
+        .msg-system .msg-body { background: transparent; font-size: 0.8rem; color: var(--text-secondary); font-style: italic; }
+        
+        .answer-row { display: flex; gap: 12px; }
+        .answer-row textarea { flex: 1; min-height: 50px; margin-bottom: 0; }
         .answer-row .btn { width: auto; min-width: 110px; }
 
-        /* ── Status bar ── */
-        .status-bar {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px 20px;
-            flex-wrap: wrap;
-        }
-
-        .status-pill {
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .pill-idle       { background: rgba(255,255,255,0.06); color: var(--text-muted); }
-        .pill-interviewing { background: rgba(108,92,231,0.15); color: var(--accent); }
-        .pill-completed  { background: rgba(0,184,148,0.15); color: var(--success); }
-        .pill-error      { background: rgba(225,112,85,0.15); color: var(--danger); }
-
-        .status-info {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
-
-        .status-info strong { color: var(--text-primary); }
-
-        /* ── Report section ── */
-        .report-section {
-            grid-column: 1 / -1;
-        }
-
-        .report-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            font-size: 0.88rem;
-            line-height: 1.7;
-            white-space: pre-wrap;
-        }
-
-        .report-content h2 { font-size: 1.1rem; margin: 18px 0 8px; color: var(--accent); }
-        .report-content h3 { font-size: 0.95rem; margin: 14px 0 6px; color: var(--text-primary); }
-        .report-content ul { padding-left: 20px; }
-        .report-content li { margin-bottom: 4px; }
-
-        .decision-badge {
-            display: inline-block;
-            padding: 6px 20px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 1rem;
-            margin: 10px 0;
-        }
-
-        .decision-Pass    { background: rgba(0,184,148,0.15); color: var(--success); border: 1px solid rgba(0,184,148,0.3); }
-        .decision-Fail    { background: rgba(225,112,85,0.15); color: var(--danger); border: 1px solid rgba(225,112,85,0.3); }
+        .report-section { grid-column: 1 / -1; }
+        .report-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; font-size: 0.88rem; line-height: 1.7; white-space: pre-wrap; }
+        .decision-badge { display: inline-block; padding: 6px 20px; border-radius: 8px; font-weight: 700; margin: 10px 0; }
+        .decision-Pass { background: rgba(0,184,148,0.15); color: var(--success); border: 1px solid rgba(0,184,148,0.3); }
+        .decision-Fail { background: rgba(225,112,85,0.15); color: var(--danger); border: 1px solid rgba(225,112,85,0.3); }
         .decision-Consider { background: rgba(253,203,110,0.15); color: var(--warning); border: 1px solid rgba(253,203,110,0.3); }
 
-        /* ── Loading ── */
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
         .hidden { display: none !important; }
-
-        /* ── JSON preview toggle ── */
-        .json-toggle {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
+        .json-toggle { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 12px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; transition: all 0.2s; }
         .json-toggle:hover { color: var(--text-primary); border-color: var(--accent); }
-
-        .json-preview {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            margin-top: 8px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            max-height: 200px;
-            overflow: auto;
-            white-space: pre;
-        }
+        .json-preview { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-top: 8px; font-family: monospace; font-size: 0.72rem; color: var(--text-secondary); max-height: 250px; overflow: auto; white-space: pre; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .upload-status { font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="app">
         <header>
             <h1>🎤 Interview Agent — Test Console</h1>
-            <p>Human-in-the-Loop Interview Simulation</p>
+            <p>Upload CV/JD và bắt đầu phỏng vấn</p>
         </header>
 
-        <!-- Status Bar -->
         <div class="status-bar" id="statusBar">
             <span class="status-pill pill-idle" id="statusPill">IDLE</span>
             <span class="status-info" id="statusText">Chưa bắt đầu phiên phỏng vấn</span>
@@ -412,116 +142,71 @@
 
         <div style="height: 20px;"></div>
 
-        <!-- Setup Section -->
         <div class="grid" id="setupSection">
             <!-- CV Card -->
             <div class="card">
-                <h2><span class="icon icon-cv">📄</span> Thông tin CV Ứng viên</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Họ tên</label>
-                        <input type="text" id="cv_name" value="Nguyễn Văn An" placeholder="Họ tên">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="cv_email" value="an.nguyen@email.com" placeholder="Email">
-                    </div>
+                <h2><span class="icon icon-cv">📄</span> 1. Chọn hoặc Upload CV</h2>
+                <label>Chọn CV đã có trong hệ thống</label>
+                <select id="cvSelect" onchange="handleSelectCv()">
+                    <option value="">-- Đang tải danh sách CV... --</option>
+                </select>
+                
+                <label style="margin-top: 15px;">Hoặc Upload CV Mới</label>
+                <div class="upload-row">
+                    <input type="file" id="cvFile" accept=".pdf,.docx,.txt">
+                    <button class="btn btn-outline" id="cvUploadBtn" onclick="uploadDoc('cv')">Upload</button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Số năm kinh nghiệm</label>
-                        <input type="number" id="cv_yoe" value="3" step="0.5" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Chức danh gần nhất</label>
-                        <input type="text" id="cv_title" value="Backend Developer" placeholder="VD: Senior Developer">
-                    </div>
+                <div id="cvUploadStatus" class="upload-status"></div>
+
+                <div style="margin-top: 15px;">
+                    <button class="json-toggle" onclick="togglePreview('cvPreview')">👁 Xem trước dữ liệu CV (JSON)</button>
+                    <div class="json-preview hidden" id="cvPreview">Chưa chọn CV nào.</div>
                 </div>
-                <div class="form-group">
-                    <label>Kỹ năng chính (cách nhau bằng dấu phẩy)</label>
-                    <input type="text" id="cv_skills" value="Python, FastAPI, PostgreSQL, Docker, Redis" placeholder="Python, Java, React...">
-                </div>
-                <div class="form-group">
-                    <label>Mô tả kinh nghiệm (tóm tắt)</label>
-                    <textarea id="cv_experience" rows="3">3 năm kinh nghiệm phát triển backend với Python/FastAPI. Từng xây dựng hệ thống API xử lý 500 request/s. Có kinh nghiệm deploy Docker, CI/CD với GitHub Actions. Làm việc với PostgreSQL và Redis cache.</textarea>
-                </div>
-                <button class="json-toggle" onclick="togglePreview('cvPreview')">👁 Xem JSON</button>
-                <div class="json-preview hidden" id="cvPreview"></div>
             </div>
 
             <!-- JD Card -->
             <div class="card">
-                <h2><span class="icon icon-jd">📋</span> Yêu cầu Công việc (JD)</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Vị trí tuyển dụng</label>
-                        <input type="text" id="jd_title" value="Senior Backend Developer" placeholder="VD: Senior Backend Developer">
-                    </div>
-                    <div class="form-group">
-                        <label>Cấp bậc</label>
-                        <select id="jd_level">
-                            <option value="Junior">Junior</option>
-                            <option value="Mid">Mid</option>
-                            <option value="Senior" selected>Senior</option>
-                            <option value="Lead">Lead</option>
-                            <option value="Manager">Manager</option>
-                        </select>
-                    </div>
+                <h2><span class="icon icon-jd">📋</span> 2. Chọn hoặc Upload JD</h2>
+                <label>Chọn JD đã có trong hệ thống</label>
+                <select id="jdSelect" onchange="handleSelectJd()">
+                    <option value="">-- Đang tải danh sách JD... --</option>
+                </select>
+                
+                <label style="margin-top: 15px;">Hoặc Upload JD Mới</label>
+                <div class="upload-row">
+                    <input type="file" id="jdFile" accept=".pdf,.docx,.txt">
+                    <button class="btn btn-outline" id="jdUploadBtn" onclick="uploadDoc('jd')">Upload</button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Năm KN tối thiểu</label>
-                        <input type="number" id="jd_min_yoe" value="4" step="0.5" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Yêu cầu học vấn</label>
-                        <input type="text" id="jd_education" value="Cử nhân CNTT hoặc tương đương" placeholder="VD: Cử nhân CNTT">
-                    </div>
+                <div id="jdUploadStatus" class="upload-status"></div>
+
+                <div style="margin-top: 15px;">
+                    <button class="json-toggle" onclick="togglePreview('jdPreview')">👁 Xem trước dữ liệu JD (JSON)</button>
+                    <div class="json-preview hidden" id="jdPreview">Chưa chọn JD nào.</div>
                 </div>
-                <div class="form-group">
-                    <label>Kỹ năng yêu cầu (must_have — cách nhau bằng dấu phẩy)</label>
-                    <input type="text" id="jd_must_skills" value="Python, FastAPI, PostgreSQL, System Design" placeholder="Python, Java...">
-                </div>
-                <div class="form-group">
-                    <label>Kỹ năng nice_to_have (cách nhau bằng dấu phẩy)</label>
-                    <input type="text" id="jd_nice_skills" value="Kubernetes, AWS, CI/CD" placeholder="Docker, K8s...">
-                </div>
-                <div class="form-group">
-                    <label>Trách nhiệm chính</label>
-                    <textarea id="jd_responsibilities" rows="3">Thiết kế và phát triển hệ thống backend scale lớn. Code review và mentoring junior. Tối ưu hiệu năng hệ thống. Làm việc với team DevOps để triển khai CI/CD.</textarea>
-                </div>
-                <button class="json-toggle" onclick="togglePreview('jdPreview')">👁 Xem JSON</button>
-                <div class="json-preview hidden" id="jdPreview"></div>
             </div>
         </div>
 
         <div style="height: 16px;" id="startBtnSpacer"></div>
 
-        <!-- Start Button -->
         <div id="startBtnContainer">
-            <button class="btn btn-primary" id="startBtn" onclick="startInterview()">
-                🚀 Bắt đầu Phỏng vấn
+            <button class="btn btn-primary" id="startBtn" onclick="startInterview()" disabled>
+                🚀 Bắt đầu Phỏng vấn (Vui lòng chọn CV và JD)
             </button>
         </div>
 
         <div style="height: 24px;"></div>
 
-        <!-- Chat Section -->
+        <!-- Chat & Report Sections -->
         <div class="grid">
             <div class="card chat-area hidden" id="chatSection">
                 <h2><span class="icon icon-chat">💬</span> Phòng Phỏng vấn</h2>
-                <div class="messages" id="chatMessages">
-                    <!-- Messages rendered here -->
-                </div>
+                <div class="messages" id="chatMessages"></div>
                 <div class="answer-row">
                     <textarea id="answerInput" placeholder="Nhập câu trả lời của bạn..." onkeydown="handleAnswerKey(event)"></textarea>
-                    <button class="btn btn-send" id="sendBtn" onclick="sendAnswer()">
-                        ➤ Gửi
-                    </button>
+                    <button class="btn btn-send" id="sendBtn" onclick="sendAnswer()">➤ Gửi</button>
                 </div>
             </div>
 
-            <!-- Report Section -->
             <div class="card report-section hidden" id="reportSection">
                 <h2><span class="icon icon-report">📊</span> Kết quả Phỏng vấn</h2>
                 <div id="reportContent" class="report-content"></div>
@@ -530,26 +215,206 @@
     </div>
 
     <script>
-        // ── Config ──
-        const API_BASE = window.location.origin + '/api/v1/interview';
+        const API_DOCS_BASE = window.location.origin + '/api/v1/documents';
+        const API_INTERVIEW_BASE = window.location.origin + '/api/v1/interview';
+        
+        let currentCvData = null;
+        let currentJdData = null;
         let currentThreadId = null;
         let isProcessing = false;
 
-        // ── Helpers ──
         function $(id) { return document.getElementById(id); }
 
+        // --- Initialization ---
+        window.onload = async () => {
+            await Promise.all([fetchCvs(), fetchJds()]);
+            checkReadyState();
+        };
+
+        async function fetchCvs() {
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/cvs`);
+                const data = await res.json();
+                const select = $('cvSelect');
+                select.innerHTML = '<option value="">-- Chọn CV --</option>';
+                data.data.forEach(cv => {
+                    select.innerHTML += `<option value="${cv.id}">${cv.name}</option>`;
+                });
+            } catch (e) {
+                console.error("Lỗi tải danh sách CV:", e);
+                $('cvSelect').innerHTML = '<option value="">Lỗi tải dữ liệu!</option>';
+            }
+        }
+
+        async function fetchJds() {
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/jds`);
+                const data = await res.json();
+                const select = $('jdSelect');
+                select.innerHTML = '<option value="">-- Chọn JD --</option>';
+                data.data.forEach(jd => {
+                    select.innerHTML += `<option value="${jd.id}">${jd.title}</option>`;
+                });
+            } catch (e) {
+                console.error("Lỗi tải danh sách JD:", e);
+                $('jdSelect').innerHTML = '<option value="">Lỗi tải dữ liệu!</option>';
+            }
+        }
+
+        // --- Select & Fetch Details ---
+        async function handleSelectCv() {
+            const id = $('cvSelect').value;
+            if (!id) {
+                currentCvData = null;
+                $('cvPreview').textContent = "Chưa chọn CV nào.";
+                checkReadyState();
+                return;
+            }
+            $('cvPreview').innerHTML = '<span class="spinner"></span> Đang tải...';
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/cvs/${id}`);
+                const data = await res.json();
+                // Loại bỏ object _id của mongo nếu có
+                const cleanData = { ...data.data };
+                delete cleanData._id;
+                delete cleanData.task_id;
+                delete cleanData.original_file_path;
+                
+                currentCvData = cleanData;
+                $('cvPreview').textContent = JSON.stringify(currentCvData, null, 2);
+            } catch (e) {
+                $('cvPreview').textContent = "Lỗi tải dữ liệu CV!";
+            }
+            checkReadyState();
+        }
+
+        async function handleSelectJd() {
+            const id = $('jdSelect').value;
+            if (!id) {
+                currentJdData = null;
+                $('jdPreview').textContent = "Chưa chọn JD nào.";
+                checkReadyState();
+                return;
+            }
+            $('jdPreview').innerHTML = '<span class="spinner"></span> Đang tải...';
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/jds/${id}`);
+                const data = await res.json();
+                const cleanData = { ...data.data };
+                delete cleanData._id;
+                delete cleanData.task_id;
+                delete cleanData.original_file_path;
+                
+                currentJdData = cleanData;
+                $('jdPreview').textContent = JSON.stringify(currentJdData, null, 2);
+            } catch (e) {
+                $('jdPreview').textContent = "Lỗi tải dữ liệu JD!";
+            }
+            checkReadyState();
+        }
+
+        function checkReadyState() {
+            const btn = $('startBtn');
+            if (currentCvData && currentJdData) {
+                btn.disabled = false;
+                btn.innerHTML = '🚀 Bắt đầu Phỏng vấn';
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = '🚀 Bắt đầu Phỏng vấn (Vui lòng chọn CV và JD)';
+            }
+        }
+
+        // --- Upload & Polling ---
+        async function uploadDoc(type) {
+            const fileInput = $(`${type}File`);
+            const statusEl = $(`${type}UploadStatus`);
+            const btn = $(`${type}UploadBtn`);
+            
+            if (!fileInput.files.length) {
+                alert("Vui lòng chọn file trước!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('doc_type', type);
+
+            btn.disabled = true;
+            statusEl.innerHTML = '<span class="spinner"></span> Đang upload...';
+
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.task_id) {
+                    statusEl.innerHTML = '<span class="spinner"></span> Upload xong, đang dùng AI trích xuất...';
+                    pollTask(data.task_id, type, statusEl, btn);
+                } else {
+                    throw new Error(data.detail || 'Upload thất bại');
+                }
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color: var(--danger)">❌ Lỗi: ${e.message}</span>`;
+                btn.disabled = false;
+            }
+        }
+
+        async function pollTask(taskId, type, statusEl, btn) {
+            try {
+                const res = await fetch(`${API_DOCS_BASE}/tasks/${taskId}`);
+                const data = await res.json();
+                
+                if (data.status === 'SUCCESS') {
+                    statusEl.innerHTML = `<span style="color: var(--success)">✅ Trích xuất thành công!</span>`;
+                    btn.disabled = false;
+                    $(`${type}File`).value = ''; // clear input
+                    
+                    // Refresh list and auto select the newest
+                    if (type === 'cv') {
+                        await fetchCvs();
+                        const select = $('cvSelect');
+                        if (select.options.length > 1) {
+                            select.selectedIndex = 1; // Mới nhất thường nằm đầu do sort(-1)
+                            handleSelectCv();
+                        }
+                    } else {
+                        await fetchJds();
+                        const select = $('jdSelect');
+                        if (select.options.length > 1) {
+                            select.selectedIndex = 1;
+                            handleSelectJd();
+                        }
+                    }
+                } else if (data.status === 'FAILURE' || data.status === 'REVOKED') {
+                    statusEl.innerHTML = `<span style="color: var(--danger)">❌ Lỗi khi xử lý: ${data.error || 'Unknown'}</span>`;
+                    btn.disabled = false;
+                } else {
+                    // Tiếp tục poll
+                    setTimeout(() => pollTask(taskId, type, statusEl, btn), 2000);
+                }
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color: var(--danger)">❌ Lỗi kết nối khi check status</span>`;
+                btn.disabled = false;
+            }
+        }
+
+        // --- Interview Flow (Kept mostly intact) ---
         function setStatus(status, text) {
             const pill = $('statusPill');
-            pill.className = 'status-pill';
-            pill.classList.add(`pill-${status}`);
+            pill.className = `status-pill pill-${status}`;
             pill.textContent = status.toUpperCase();
             $('statusText').innerHTML = text;
+        }
+
+        function togglePreview(id) {
+            const el = $(id);
+            el.classList.toggle('hidden');
         }
 
         function addMessage(type, content, meta = '') {
             const container = $('chatMessages');
             const avatarMap = { ai: 'AI', human: 'Bạn', system: '⚙' };
-
             const div = document.createElement('div');
             div.className = `msg msg-${type}`;
             div.innerHTML = `
@@ -569,105 +434,30 @@
             return div.innerHTML;
         }
 
-        function togglePreview(id) {
-            const el = $(id);
-            el.classList.toggle('hidden');
-            if (!el.classList.contains('hidden')) {
-                if (id === 'cvPreview') el.textContent = JSON.stringify(buildCvData(), null, 2);
-                if (id === 'jdPreview') el.textContent = JSON.stringify(buildJdData(), null, 2);
-            }
-        }
-
         function setLoading(loading) {
             isProcessing = loading;
             $('sendBtn').disabled = loading;
-            $('startBtn').disabled = loading;
-            if (loading) {
-                $('sendBtn').innerHTML = '<span class="spinner"></span> Đang xử lý...';
-            } else {
-                $('sendBtn').innerHTML = '➤ Gửi';
-            }
+            if (loading) $('sendBtn').innerHTML = '<span class="spinner"></span> Đang xử lý...';
+            else $('sendBtn').innerHTML = '➤ Gửi';
         }
 
-        // ── Build data payloads ──
-        function buildCvData() {
-            const skills = $('cv_skills').value.split(',').map(s => s.trim()).filter(Boolean);
-            return {
-                full_name: $('cv_name').value,
-                email: $('cv_email').value,
-                total_yoe: parseFloat($('cv_yoe').value) || 0,
-                work_experience: [{
-                    title: $('cv_title').value,
-                    company: "Công ty XYZ",
-                    start_date: "2021",
-                    end_date: "Hiện tại",
-                    responsibilities: [{
-                        action: $('cv_experience').value,
-                        metrics_or_results: null
-                    }]
-                }],
-                skills: {
-                    technical_skills: skills.map(s => ({ name: s, context: null, yoe: null })),
-                    hard_skills: null,
-                    soft_skills: null,
-                    languages: null
-                },
-                education: null,
-                projects: null,
-                certifications: null,
-                phone: null
-            };
-        }
-
-        function buildJdData() {
-            const mustSkills = $('jd_must_skills').value.split(',').map(s => s.trim()).filter(Boolean);
-            const niceSkills = $('jd_nice_skills').value.split(',').map(s => s.trim()).filter(Boolean);
-            const responsibilities = $('jd_responsibilities').value.split('\n').map(s => s.trim()).filter(Boolean);
-
-            const skills = [
-                ...mustSkills.map(s => ({ name: s, priority: 'must_have', min_yoe: null })),
-                ...niceSkills.map(s => ({ name: s, priority: 'nice_to_have', min_yoe: null })),
-            ];
-
-            return {
-                job_title: $('jd_title').value,
-                level: $('jd_level').value,
-                skills: skills,
-                min_years_experience: parseFloat($('jd_min_yoe').value) || null,
-                education_requirements: $('jd_education').value || null,
-                responsibilities: responsibilities.length ? responsibilities : null,
-                benefits_summary: null
-            };
-        }
-
-        // ── API calls ──
         async function startInterview() {
-            if (isProcessing) return;
+            if (isProcessing || !currentCvData || !currentJdData) return;
             setLoading(true);
 
-            const payload = {
-                cv_parsed: buildCvData(),
-                jd_parsed: buildJdData()
-            };
-
             try {
-                const res = await fetch(`${API_BASE}/start`, {
+                const res = await fetch(`${API_INTERVIEW_BASE}/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        cv_parsed: currentCvData,
+                        jd_parsed: currentJdData
+                    })
                 });
-
                 const data = await res.json();
-
-                if (!res.ok) {
-                    setStatus('error', `Lỗi: ${data.detail || 'Unknown error'}`);
-                    setLoading(false);
-                    return;
-                }
+                if (!res.ok) throw new Error(data.detail || 'Unknown error');
 
                 currentThreadId = data.thread_id;
-
-                // Show chat, hide setup
                 $('chatSection').classList.remove('hidden');
                 $('setupSection').style.display = 'none';
                 $('startBtnContainer').style.display = 'none';
@@ -675,14 +465,13 @@
 
                 handleResponse(data);
             } catch (e) {
-                setStatus('error', `Lỗi kết nối: ${e.message}`);
+                setStatus('error', `Lỗi khởi tạo: ${e.message}`);
             }
             setLoading(false);
         }
 
         async function sendAnswer() {
             if (isProcessing || !currentThreadId) return;
-
             const answer = $('answerInput').value.trim();
             if (!answer) return;
 
@@ -691,26 +480,16 @@
             setLoading(true);
 
             try {
-                const res = await fetch(`${API_BASE}/answer`, {
+                const res = await fetch(`${API_INTERVIEW_BASE}/answer`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        thread_id: currentThreadId,
-                        answer: answer
-                    })
+                    body: JSON.stringify({ thread_id: currentThreadId, answer: answer })
                 });
-
                 const data = await res.json();
-
-                if (!res.ok) {
-                    addMessage('system', `❌ Lỗi: ${data.detail || 'Unknown error'}`);
-                    setLoading(false);
-                    return;
-                }
-
+                if (!res.ok) throw new Error(data.detail || 'Unknown error');
                 handleResponse(data);
             } catch (e) {
-                addMessage('system', `❌ Lỗi kết nối: ${e.message}`);
+                addMessage('system', `❌ Lỗi: ${e.message}`);
             }
             setLoading(false);
             $('answerInput').focus();
@@ -718,30 +497,16 @@
 
         function handleResponse(data) {
             if (data.status === 'interviewing') {
-                const topicInfo = data.current_topic
-                    ? `Chủ đề <strong>${data.topic_index + 1}/${data.total_topics}</strong>: ${data.current_topic}`
-                    : '';
+                const topicInfo = data.current_topic ? `Chủ đề <strong>${data.topic_index + 1}/${data.total_topics}</strong>: ${data.current_topic}` : '';
                 setStatus('interviewing', topicInfo);
-
-                if (data.question) {
-                    const meta = data.current_topic ? `📌 ${data.current_topic}` : '';
-                    addMessage('ai', data.question, meta);
-                }
-
+                if (data.question) addMessage('ai', data.question, data.current_topic ? `📌 ${data.current_topic}` : '');
             } else if (data.status === 'completed') {
                 setStatus('completed', `Phỏng vấn hoàn tất — Kết quả: <strong>${data.final_decision}</strong>`);
-
                 addMessage('system', `✅ Phỏng vấn kết thúc. Kết quả: ${data.final_decision}`);
-
-                // Show report
                 $('reportSection').classList.remove('hidden');
-                const badge = `<span class="decision-badge decision-${data.final_decision}">${data.final_decision}</span>`;
-                $('reportContent').innerHTML = badge + '\n' + (data.report || 'Không có báo cáo.');
-
-                // Disable input
+                $('reportContent').innerHTML = `<span class="decision-badge decision-${data.final_decision}">${data.final_decision}</span>\n` + (data.report || '');
                 $('answerInput').disabled = true;
                 $('sendBtn').disabled = true;
-
             } else if (data.status === 'error') {
                 setStatus('error', data.error || 'Đã xảy ra lỗi');
                 addMessage('system', `❌ ${data.error || 'Lỗi không xác định'}`);
@@ -749,7 +514,6 @@
         }
 
         function handleAnswerKey(e) {
-            // Ctrl+Enter or Cmd+Enter to send
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 sendAnswer();

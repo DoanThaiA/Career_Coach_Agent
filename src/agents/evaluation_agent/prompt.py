@@ -1,125 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
 
-# ──────────────────────────────────────────────
-# Prompt: Bóc tách CV
-# ──────────────────────────────────────────────
-
-EXTRACT_PROMPT = ChatPromptTemplate.from_template("""
-Bạn là một Hệ thống Bóc tách Dữ liệu Nhân sự (Expert HR Data Parser) cấp độ chuyên gia.
-Nhiệm vụ của bạn là đọc văn bản thô từ CV của ứng viên và chuyển đổi nó thành cấu trúc dữ liệu JSON chặt chẽ, chính xác tuyệt đối.
-
-HƯỚNG DẪN TƯ DUY VÀ XỬ LÝ DỮ LIỆU (BẮT BUỘC TUÂN THỦ):
-
-1. NGUYÊN TẮC SỰ THẬT (ZERO HALLUCINATION):
-- CHỈ trích xuất thông tin có thực trong văn bản được cung cấp.
-- KHÔNG tự động suy diễn, KHÔNG tự thêm thắt kỹ năng, KHÔNG đoán mò số liệu. 
-- Nếu một trường dữ liệu (field) không có thông tin trong CV, hãy trả về `null` hoặc mảng rỗng `[]`. Tuyệt đối không bịa data để điền vào cho đủ.
-
-2. THÔNG TIN CƠ BẢN:
-- Trích xuất họ tên (full_name), email, số điện thoại (phone) nếu có.
-- Tính toán total_yoe (tổng số năm kinh nghiệm) dựa trên các mốc thời gian làm việc.
-
-3. BÓC TÁCH KỸ NĂNG (SKILL EXTRACTION):
-- Đừng chỉ liệt kê tên kỹ năng. Hãy đọc kỹ phần mô tả dự án và kinh nghiệm để tổng hợp "Ngữ cảnh sử dụng" (context).
-- Ví dụ: Ứng viên ghi "Sử dụng Python để viết API", hãy ghi nhận context là "Viết API backend". 
-- Tự động phân loại kỹ năng vào các nhóm phù hợp: hard_skills (chuyên môn), technical_skills (công nghệ, ngôn ngữ lập trình, framework), soft_skills (kỹ năng mềm).
-- Ước lượng yoe (số năm kinh nghiệm) cho từng kỹ năng nếu có thể suy luận từ timeline làm việc.
-
-4. TÍNH TOÁN THỜI GIAN (TIME CALCULATION):
-- Khi gặp các mốc thời gian làm việc (ví dụ: "01/2022 - 05/2023" hoặc "Jan 2022 to Present"), hãy tự động tính toán tổng số tháng/năm kinh nghiệm.
-- Coi mốc "Present" hoặc "Hiện tại" là thời điểm hiện tại (Tháng 6/2026).
-
-5. QUY TẮC BÓC TÁCH KINH NGHIỆM LÀM VIỆC (WORK EXPERIENCE):
-- Hãy "phẫu thuật" từng gạch đầu dòng trong kinh nghiệm làm việc của ứng viên thành 2 phần tách biệt: Hành động (Action) và Số liệu đo lường (Metrics/Results).
-- Nếu ứng viên viết: "Tối ưu hóa truy vấn SQL giúp giảm 30% thời gian tải", hãy tách `action`: "Tối ưu hóa truy vấn SQL", và `metrics`: "Giảm 30% thời gian tải".
-- [QUAN TRỌNG] Nếu câu văn chỉ là liệt kê trách nhiệm chung chung (ví dụ: "Phát triển tính năng mới"), hãy đặt trường `metrics_or_results` là `null`. Hệ thống cần điều này để đánh giá độ chuyên nghiệp của CV.
-
-Hãy tập trung, đọc kỹ từng dòng văn bản CV dưới đây và bắt đầu bóc tách:
-{cv_context}
-
-═══════════════════════════════════════════
-VÍ DỤ MẪU (FEW-SHOT EXAMPLE)
-═══════════════════════════════════════════
-[Input CV (Trích đoạn)]:
-John Doe | 0901234567
-Kinh nghiệm: Backend Dev tại ABC (01/2021 - 12/2022). Phát triển API với FastAPI phục vụ 1000 users.
-Kỹ năng: Python, Docker.
-
-[Output JSON mong đợi (Minh họa cấu trúc)]:
-{{
-  "full_name": "Neymar Jr",
-  "phone": "0901234567",
-  "total_yoe": 5.0,
-  "work_experience": [
-    {{
-      "title": "DEV ", "company": "ABC", "start_date": "01/2021", "end_date": "12/2022",
-      "responsibilities": [
-        {{ "action": "Phát triển API với FastAPI", "metrics_or_results": "phục vụ 1000 users" }}
-      ]
-    }}
-  ],
-  "skills": {{
-    "technical_skills": [
-      {{ "name": "Python", "context": "Backend", "yoe": 2.0 }},
-      {{ "name": "FastAPI", "context": "Phát triển API", "yoe": 2.0 }},
-      {{ "name": "Docker", "context": null, "yoe": null }}
-    ]
-  }}
-}}
-""")
-
-
-# ──────────────────────────────────────────────
-# Prompt: Phân tích JD (Job Description)
-# ──────────────────────────────────────────────
-
-PARSE_JD_PROMPT = ChatPromptTemplate.from_template("""
-Bạn là một Chuyên gia Phân tích Yêu cầu Tuyển dụng (Expert Job Description Analyst).
-Nhiệm vụ của bạn là đọc mô tả công việc (JD) và bóc tách thành dữ liệu có cấu trúc.
-
-HƯỚNG DẪN BẮT BUỘC:
-
-1. PHÂN LOẠI KỸ NĂNG THEO MỨC ĐỘ ƯU TIÊN:
-   - "must_have": Kỹ năng bắt buộc phải có. Nhận biết qua các từ khóa: "yêu cầu", "bắt buộc", "cần có", "required", "must have", hoặc nếu kỹ năng xuất hiện trong phần "Yêu cầu chính".
-   - "nice_to_have": Kỹ năng ưu tiên/tham khảo. Nhận biết qua: "ưu tiên", "preferred", "nice to have", "là một lợi thế", "plus".
-   - Nếu JD không phân biệt rõ ràng, hãy dùng tư duy của chuyên gia để phán đoán dựa trên tầm quan trọng của kỹ năng đối với vị trí.
-
-2. TÍNH TOÁN SỐ NĂM KINH NGHIỆM:
-   - Trích xuất min_years_experience nếu JD ghi rõ (VD: "3+ năm kinh nghiệm").
-   - Trích xuất min_yoe cho từng kỹ năng nếu có (VD: "2 năm kinh nghiệm với Python").
-
-3. NGUYÊN TẮC SỰ THẬT:
-   - CHỈ trích xuất thông tin có thật trong JD. KHÔNG tự thêm kỹ năng hoặc yêu cầu.
-   - Nếu thông tin không có, trả về null.
-
-Hãy phân tích JD dưới đây:
-{jd_context}
-
-═══════════════════════════════════════════
-VÍ DỤ MẪU (FEW-SHOT EXAMPLE)
-═══════════════════════════════════════════
-[Input JD (Trích đoạn)]:
-Tuyển dụng Backend Developer (2+ năm kinh nghiệm).
-Yêu cầu bắt buộc: Python, SQL.
-Ưu tiên: Có kinh nghiệm Docker là một lợi thế.
-
-[Output JSON mong đợi (Minh họa cấu trúc)]:
-{{
-  "job_title": "Backend Developer",
-  "min_years_experience": 2.0,
-  "skills": [
-    {{ "name": "Python", "priority": "must_have", "min_yoe": 2.0 }},
-    {{ "name": "SQL", "priority": "must_have", "min_yoe": null }},
-    {{ "name": "Docker", "priority": "nice_to_have", "min_yoe": null }}
-  ]
-}}
-""")
-
-
-# ──────────────────────────────────────────────
-# Prompt: Đánh giá Kỹ năng (Skill Matcher)
-# ──────────────────────────────────────────────
 
 EVAL_SKILLS_PROMPT = ChatPromptTemplate.from_template("""
 Bạn là một Chuyên gia Đánh giá Kỹ năng Tuyển dụng IT.
@@ -207,10 +88,6 @@ VÍ DỤ MẪU (FEW-SHOT EXAMPLE - TRÍCH ĐOẠN ĐẦU RA JSON)
 }}
 """)
 
-
-# ──────────────────────────────────────────────
-# Prompt: Tổng hợp kết quả (Final Scorer)
-# ──────────────────────────────────────────────
 
 EVAL_FINAL_PROMPT = ChatPromptTemplate.from_template("""
 Bạn là một Giám đốc Kỹ thuật (CTO). 

@@ -3,7 +3,8 @@ from src.core.logger import get_logger
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from functools import lru_cache
-from typing import TypeVar, Type
+from typing import TypeVar, Type, List, Optional
+from langchain_core.callbacks import BaseCallbackHandler
 import json
 import re
 
@@ -147,7 +148,13 @@ def _extract_json_object(text: str) -> str | None:
     return remaining
 
 
-async def generate_with_retry_and_correction(llm, prompt: str, schema_class: Type[T], max_retries: int = 3) -> T:
+async def generate_with_retry_and_correction(
+    llm, 
+    prompt: str, 
+    schema_class: Type[T], 
+    max_retries: int = 3,
+    callbacks: Optional[List[BaseCallbackHandler]] = None
+) -> T:
     """Gọi LLM và parse JSON, nếu lỗi sẽ feed lỗi ngược lại để LLM tự sửa.
     
     Đây là cơ chế Self-Correction giúp LLM học từ lỗi và sửa trực tiếp,
@@ -158,7 +165,8 @@ async def generate_with_retry_and_correction(llm, prompt: str, schema_class: Typ
     
     for attempt in range(max_retries):
         try:
-            response = await llm.ainvoke(current_prompt)
+            config = {"callbacks": callbacks} if callbacks else None
+            response = await llm.ainvoke(current_prompt, config=config)
             raw_text = response.content
             logger.debug(f"LLM raw output ({len(raw_text)} chars) - Attempt {attempt+1}")
             return parse_llm_json(raw_text, schema_class)

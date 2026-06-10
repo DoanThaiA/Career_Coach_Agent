@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Document Processing API",
-        description="API xử lý tài liệu: Extract → Chunk → Vector DB (Qdrant)",
+        description="API xử lý tài liệu",
         version="1.0.0",
         lifespan=lifespan,
     )

@@ -25,9 +25,51 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    restart: always
+    restart: unless-stopped
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
+  # MongoDB
+  mongodb:
+    image: mongo:6-jammy
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+  # Langfuse Postgres
+  langfuse_postgres:
+    image: postgres:15
+    container_name: langfuse_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - langfuse_db_data:/var/lib/postgresql/data
+
+  # Langfuse Server
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: langfuse
+    depends_on:
+      - langfuse_postgres
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@langfuse_postgres:5432/postgres
+      - NEXTAUTH_SECRET=supersecret123
+      - SALT=supersalt123
+      - NEXTAUTH_URL=http://localhost:3000
+      - TELEMETRY_ENABLED=false
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=false
+
 volumes:
   qdrant_storage:
   rabbitmq_data:
+  mongodb_data:
+  langfuse_db_data:
