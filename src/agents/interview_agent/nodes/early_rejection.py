@@ -24,7 +24,7 @@ async def early_rejection(state: InterviewState) -> dict:
     
     # 3. Tạo báo cáo rút gọn ghi nhận lỗi
     report_markdown = f"""
-## ❌ BUỔI PHỎNG VẤN BỊ HỦY
+## BUỔI PHỎNG VẤN BỊ HỦY
 
 **Quyết định:** Cancelled (Hủy bỏ)
 **Lý do:** {error_msg}

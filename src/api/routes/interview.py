@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect
 from langchain_core.messages import HumanMessage
 
 from src.agents.interview_agent.graph import build_interview_graph
@@ -255,3 +255,122 @@ async def get_interview_status(thread_id: str):
         )
 
     return _extract_response(current_state.values, thread_id)
+
+
+# ══════════════════════════════════════════════
+#  WS /interview/ws — Real-time Streaming
+# ══════════════════════════════════════════════
+
+@router.websocket("/ws")
+async def websocket_interview_endpoint(websocket: WebSocket):
+    """
+    Kết nối WebSocket cho phỏng vấn.
+    Client gửi JSON format:
+    - Bắt đầu: {"type": "start", "payload": {"cv_parsed": {...}, "jd_parsed": {...}}}
+    - Trả lời: {"type": "answer", "payload": {"thread_id": "...", "answer": "..."}}
+    """
+    await websocket.accept()
+    logger.info("✔ Khởi tạo kết nối WebSocket thành công")
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type")
+            payload = data.get("payload", {})
+
+            if msg_type == "start":
+                thread_id = uuid.uuid4().hex
+                try:
+                    cv_info = CVInformation.model_validate(payload.get("cv_parsed", {}))
+                    jd_info = JDRequirements.model_validate(payload.get("jd_parsed", {}))
+                except Exception as e:
+                    await websocket.send_json({"error": f"Dữ liệu CV/JD không hợp lệ: {str(e)}"})
+                    continue
+
+                graph = _get_graph()
+                
+                from src.core.monitoring import get_langfuse_handler
+                langfuse_handler = get_langfuse_handler(session_id=thread_id)
+                config = {"configurable": {"thread_id": thread_id}}
+                if langfuse_handler:
+                    config["callbacks"] = [langfuse_handler]
+
+                initial_state = {
+                    "cv_parsed": cv_info,
+                    "jd_parsed": jd_info,
+                    "topics": [],
+                    "current_topic_index": 0,
+                    "messages": [],
+                    "extracted_evidence": {},
+                    "topic_scores": {},
+                    "score_reasonings": {},
+                    "final_decision": "",
+                    "report": "",
+                    "requires_followup": False,
+                    "followup_count": 0,
+                    "errors": [],
+                }
+
+                try:
+                    result = await graph.ainvoke(initial_state, config)
+                    logger.info(f"✔ [WS] Phiên phỏng vấn {thread_id} đã khởi tạo thành công")
+
+                    if result.get("final_decision") == "Cancelled":
+                        resp = InterviewResponse(
+                            thread_id=thread_id,
+                            status="error",
+                            error=result.get("report", "Phỏng vấn bị hủy do lỗi dữ liệu đầu vào.")
+                        )
+                    else:
+                        resp = _extract_response(result, thread_id)
+                    
+                    await websocket.send_json(resp.model_dump())
+                except Exception as e:
+                    logger.error(f"✖ [WS] Lỗi khi khởi tạo phỏng vấn: {e}", exc_info=True)
+                    await websocket.send_json({"error": f"Lỗi hệ thống: {str(e)}"})
+
+            elif msg_type == "answer":
+                thread_id = payload.get("thread_id")
+                answer_text = payload.get("answer")
+                
+                if not thread_id or not answer_text:
+                    await websocket.send_json({"error": "Thiếu thread_id hoặc answer trong payload"})
+                    continue
+
+                graph = _get_graph()
+                
+                from src.core.monitoring import get_langfuse_handler
+                langfuse_handler = get_langfuse_handler(session_id=thread_id)
+                config = {"configurable": {"thread_id": thread_id}}
+                if langfuse_handler:
+                    config["callbacks"] = [langfuse_handler]
+
+                current_state = graph.get_state(config)
+                if current_state is None or current_state.values is None or not current_state.values:
+                    await websocket.send_json({"error": f"Không tìm thấy phiên phỏng vấn: {thread_id}"})
+                    continue
+
+                try:
+                    human_msg = HumanMessage(content=answer_text)
+                    await graph.aupdate_state(config, {"messages": [human_msg]})
+                    
+                    result = await graph.ainvoke(None, config)
+                    logger.info(f"✔ [WS] Phiên {thread_id}: đã xử lý câu trả lời")
+                    
+                    resp = _extract_response(result, thread_id)
+                    await websocket.send_json(resp.model_dump())
+                except Exception as e:
+                    logger.error(f"✖ [WS] Lỗi khi xử lý câu trả lời phiên {thread_id}: {e}", exc_info=True)
+                    await websocket.send_json({"error": f"Lỗi hệ thống: {str(e)}"})
+            
+            else:
+                await websocket.send_json({"error": f"Loại message không được hỗ trợ: {msg_type}"})
+
+    except WebSocketDisconnect:
+        logger.info("✔ Client đã ngắt kết nối WebSocket")
+    except Exception as e:
+        logger.error(f"✖ Lỗi kết nối WebSocket: {e}", exc_info=True)
+        try:
+            await websocket.close()
+        except:
+            pass
