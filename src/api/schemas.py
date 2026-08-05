@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 
 
 class DocumentType(str, Enum):
-    GENERAL = "general"
     CV = "cv"
     JD = "jd"
 
@@ -13,6 +12,18 @@ class DocumentType(str, Enum):
 class ProcessDocumentRequest(BaseModel):
     """Request body khi gọi API bằng JSON (truyền file_path trực tiếp)."""
     file_path: str = Field(..., description="Đường dẫn tuyệt đối tới file cần xử lý")
+
+
+class EvaluateRequest(BaseModel):
+    """Request body cho endpoint đánh giá."""
+    cv_id: str = Field(..., description="ID của CV trong MongoDB")
+    jd_id: str = Field(..., description="ID của JD trong MongoDB")
+
+
+class InterviewStartByIdRequest(BaseModel):
+    """Request body cho việc bắt đầu phỏng vấn từ ID."""
+    cv_id: str = Field(..., description="ID của CV trong MongoDB")
+    jd_id: str = Field(..., description="ID của JD trong MongoDB")
 
 
 

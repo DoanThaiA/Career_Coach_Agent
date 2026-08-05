@@ -1,6 +1,6 @@
 from src.core.config import settings
 from src.core.logger import get_logger
-from langchain_openai import ChatOpenAI
+from langchain_cohere import ChatCohere
 from pydantic import BaseModel
 from functools import lru_cache
 from typing import TypeVar, Type, List, Optional
@@ -210,49 +210,40 @@ def get_schema_instruction(schema_class: Type[T]) -> str:
 
 
 @lru_cache(maxsize=1)
-def get_llm() -> ChatOpenAI:
+def get_llm() -> ChatCohere:
     """LLM mặc định — dùng cho các tác vụ chung (chat, Q&A)."""
-    return ChatOpenAI(
-        base_url=settings.LLM_BASE_URL,
-        api_key=settings.LLM_API_KEY,
-        model=settings.LLM_MODEL_QWEN25,
+    return ChatCohere(
+        cohere_api_key=settings.COHERE_API_KEY,
+        model=settings.LLM_MODEL,
         temperature=0.7,
-        max_tokens=settings.LLM_MAX_TOKENS,
-        streaming=False,
     )
 
 
 @lru_cache(maxsize=1)
-def get_extraction_llm() -> ChatOpenAI:
+def get_extraction_llm() -> ChatCohere:
     """LLM cho extraction (CV/JD parsing).
     
     - streaming=False: bắt buộc cho structured output trên LLM local.
     - temperature=0.1: bóc tách chính xác, không hallucinate.
     - max_tokens cao hơn mặc định vì JSON output có thể dài.
     """
-    return ChatOpenAI(
-        base_url=settings.LLM_BASE_URL,
-        api_key=settings.LLM_API_KEY,
-        model=settings.LLM_MODEL_QWEN25,
+    return ChatCohere(
+        cohere_api_key=settings.COHERE_API_KEY,
+        model=settings.LLM_MODEL,
         temperature=0.1,
-        max_tokens=max(settings.LLM_MAX_TOKENS, 4096),
-        streaming=False,
     )
 
 
 @lru_cache(maxsize=1)
-def get_evaluation_llm() -> ChatOpenAI:
+def get_evaluation_llm() -> ChatCohere:
     """LLM cho evaluation (đánh giá CV vs JD).
     
     - streaming=False: bắt buộc cho structured output.
     - temperature=0.3: cân bằng sáng tạo và chính xác.
     - max_tokens cao vì EvaluationReport JSON rất dài.
     """
-    return ChatOpenAI(
-        base_url=settings.LLM_BASE_URL,
-        api_key=settings.LLM_API_KEY,
-        model=settings.LLM_MODEL_QWEN25,
+    return ChatCohere(
+        cohere_api_key=settings.COHERE_API_KEY,
+        model=settings.LLM_MODEL,
         temperature=0.3,
-        max_tokens=max(settings.LLM_MAX_TOKENS, 8192),
-        streaming=False,
     )

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recruitment Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-brain"></i>
+                <span>DeepAI Recruiter</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-target="upload">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload Documents
+                </a>
+                <a href="#" class="nav-item" data-target="database">
+                    <i class="fa-solid fa-database"></i> Document Database
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h2>Welcome to AI Recruitment</h2>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=random" alt="Admin">
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="page-section active">
+                    <div class="dashboard-cards">
+                        <div class="card stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                            <div class="stat-info">
+                                <h3>Total CVs</h3>
+                                <p id="total-cvs">0</p>
+                            </div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-briefcase"></i></div>
+                            <div class="stat-info">
+                                <h3>Total JDs</h3>
+                                <p id="total-jds">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Upload Section -->
+                <section id="upload" class="page-section hidden">
+                    <div class="upload-container">
+                        <div class="upload-box" id="cv-upload-box">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <h3>Upload CV</h3>
+                            <p>Drag & drop PDF, DOCX here</p>
+                            <input type="file" id="cv-file" accept=".pdf,.docx,.txt" hidden>
+                            <button class="btn btn-primary" onclick="document.getElementById('cv-file').click()">Select File</button>
+                            <div class="upload-status" id="cv-status"></div>
+                        </div>
+                        
+                        <div class="upload-box" id="jd-upload-box">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <h3>Upload JD</h3>
+                            <p>Drag & drop PDF, DOCX here</p>
+                            <input type="file" id="jd-file" accept=".pdf,.docx,.txt" hidden>
+                            <button class="btn btn-primary" onclick="document.getElementById('jd-file').click()">Select File</button>
+                            <div class="upload-status" id="jd-status"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Database Section -->
+                <section id="database" class="page-section hidden">
+                    <div class="database-container">
+                        <div class="list-panel">
+                            <h3><i class="fa-solid fa-file-pdf"></i> Select CV</h3>
+                            <div class="list-container" id="cv-list">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                        
+                        <div class="list-panel">
+                            <h3><i class="fa-solid fa-briefcase"></i> Select JD</h3>
+                            <div class="list-container" id="jd-list">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Panel -->
+                    <div class="action-panel hidden" id="action-panel">
+                        <div class="selected-info">
+                            <p><strong>CV:</strong> <span id="selected-cv-name">-</span></p>
+                            <p><strong>JD:</strong> <span id="selected-jd-name">-</span></p>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" id="btn-evaluate">
+                                <i class="fa-solid fa-magnifying-glass-chart"></i> Evaluate Candidate
+                            </button>
+                            <button class="btn btn-primary" id="btn-interview">
+                                <i class="fa-solid fa-comments"></i> Start Interview
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Evaluation Modal -->
+    <div class="modal" id="eval-modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-eval-modal">&times;</span>
+            <h2 class="modal-title">Evaluation Report</h2>
+            <div id="eval-loading" class="loading-spinner hidden">
+                <div class="spinner"></div>
+                <p>AI is analyzing the candidate... Please wait.</p>
+            </div>
+            <div id="eval-result" class="eval-result-content hidden">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

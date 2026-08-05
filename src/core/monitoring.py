@@ -1,4 +1,4 @@
-from langfuse.callback import CallbackHandler
+from langfuse.langchain import CallbackHandler
 from src.core.config import settings
 from src.core.logger import get_logger
 
@@ -14,10 +14,11 @@ def get_langfuse_handler(session_id: str = None, user_id: str = None) -> Callbac
         return None
         
     logger.debug(f"Đang khởi tạo Langfuse Handler cho session: {session_id}")
-    return CallbackHandler(
-        public_key=settings.LANGFUSE_PUBLIC_KEY,
-        secret_key=settings.LANGFUSE_SECRET_KEY,
-        host=settings.LANGFUSE_HOST,
-        session_id=session_id,
-        user_id=user_id
-    )
+    
+    import os
+    os.environ["LANGFUSE_PUBLIC_KEY"] = settings.LANGFUSE_PUBLIC_KEY
+    os.environ["LANGFUSE_SECRET_KEY"] = settings.LANGFUSE_SECRET_KEY
+    os.environ["LANGFUSE_HOST"] = settings.LANGFUSE_HOST
+    
+    langfuse_handler = CallbackHandler()
+    return langfuse_handler

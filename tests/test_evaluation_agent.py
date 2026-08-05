@@ -14,17 +14,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.agents.evaluation_agent.output_schema import (
-    CVInformation,
-    Education,
-    ExtractedSkill,
-    Skill,
-    WorkExperience,
-    ResponsibilityDetail,
-    Project,
-    Certification,
-    JDRequirements,
-    JDSkill,
-    SkillPriority,
     EvaluationReport,
     FinalSynthesis,
     Recommendation,
@@ -35,9 +24,24 @@ from src.agents.evaluation_agent.output_schema import (
     SkillEvaluationResult,
     ExperienceEvaluationResult,
 )
+from src.services.parse_cv import (
+    CVInformation,
+    Education,
+    ExtractedSkill,
+    Skill,
+    WorkExperience,
+    ResponsibilityDetail,
+    Project,
+    Certification,
+)
+from src.services.parse_jd import (
+    JDRequirements,
+    JDSkill,
+    SkillPriority,
+)
 from src.agents.evaluation_agent.state import EvaluationState
 from src.agents.evaluation_agent.nodes.eval_final import validate_report, compute_deterministic_score, determine_recommendation
-from src.agents.evaluation_agent.graph import check_readiness, should_evaluate, check_eval_readiness, should_finalize
+from src.agents.evaluation_agent.graph import check_eval_readiness, should_finalize
 from src.utils import parse_llm_json
 
 
@@ -272,42 +276,18 @@ class TestDeterministicScoring:
 # ──────────────────────────────────────────────
 
 class TestRoutingFunctions:
-    def test_check_readiness_returns_empty(self):
-        assert check_readiness({"errors": []}) == {}
-
-    def test_should_evaluate_success(self, sample_cv_parsed, sample_jd_parsed):
+    def test_validate_input_success(self, sample_cv_parsed, sample_jd_parsed):
         state = {"cv_parsed": sample_cv_parsed, "jd_parsed": sample_jd_parsed, "errors": []}
-        assert should_evaluate(state) == "evaluate"
-
-    def test_should_finalize_success(self, sample_skill_eval, sample_experience_eval):
-        state = {"skill_evaluation": sample_skill_eval, "experience_evaluation": sample_experience_eval, "errors": []}
-        assert should_finalize(state) == "finalize"
-
-
-class TestExtractorNode:
-    @pytest.mark.asyncio
-    async def test_extract_success(self, sample_cv_text, sample_cv_parsed):
-        mock_llm = AsyncMock()
-        mock_llm.ainvoke.return_value = _make_mock_llm_response(
-            sample_cv_parsed.model_dump_json()
-        )
-        with patch("src.agents.evaluation_agent.nodes.extract_cv.get_extraction_llm", return_value=mock_llm):
-            from src.agents.evaluation_agent.nodes.extract_cv import extractor_node
-            result = await extractor_node({"cv_content": sample_cv_text, "errors": []})
-            assert "cv_parsed" in result
+        from src.agents.evaluation_agent.graph import validate_input
+        assert validate_input(state) == "start_evaluate"
+        
+    def test_validate_input_failure_no_cv(self, sample_jd_parsed):
+        state = {"jd_parsed": sample_jd_parsed, "errors": []}
+        from src.agents.evaluation_agent.graph import validate_input
+        assert validate_input(state) == "end"
 
 
-class TestParseJDNode:
-    @pytest.mark.asyncio
-    async def test_parse_jd_success(self, sample_jd_text, sample_jd_parsed):
-        mock_llm = AsyncMock()
-        mock_llm.ainvoke.return_value = _make_mock_llm_response(
-            sample_jd_parsed.model_dump_json()
-        )
-        with patch("src.agents.evaluation_agent.nodes.parse_jd.get_extraction_llm", return_value=mock_llm):
-            from src.agents.evaluation_agent.nodes.parse_jd import parse_jd_node
-            result = await parse_jd_node({"job_requirement": sample_jd_text, "errors": []})
-            assert "jd_parsed" in result
+
 
 
 # ──────────────────────────────────────────────
@@ -367,12 +347,6 @@ class TestFullGraph:
         sample_cv_parsed, sample_jd_parsed, 
         sample_skill_eval, sample_experience_eval, sample_synthesis,
     ):
-        mock_extract_llm = AsyncMock()
-        mock_extract_llm.ainvoke.return_value = _make_mock_llm_response(sample_cv_parsed.model_dump_json())
-
-        mock_jd_llm = AsyncMock()
-        mock_jd_llm.ainvoke.return_value = _make_mock_llm_response(sample_jd_parsed.model_dump_json())
-
         mock_skill_llm = AsyncMock()
         mock_skill_llm.ainvoke.return_value = _make_mock_llm_response(sample_skill_eval.model_dump_json())
 
@@ -380,20 +354,17 @@ class TestFullGraph:
         mock_exp_llm.ainvoke.return_value = _make_mock_llm_response(sample_experience_eval.model_dump_json())
 
         mock_final_llm = AsyncMock()
-        # eval_final expects FinalSynthesis from LLM, not full EvaluationReport
         mock_final_llm.ainvoke.return_value = _make_mock_llm_response(sample_synthesis.model_dump_json())
 
-        with patch("src.agents.evaluation_agent.nodes.extract_cv.get_extraction_llm", return_value=mock_extract_llm), \
-             patch("src.agents.evaluation_agent.nodes.parse_jd.get_extraction_llm", return_value=mock_jd_llm), \
-             patch("src.agents.evaluation_agent.nodes.eval_skills.get_evaluation_llm", return_value=mock_skill_llm), \
+        with patch("src.agents.evaluation_agent.nodes.eval_skills.get_evaluation_llm", return_value=mock_skill_llm), \
              patch("src.agents.evaluation_agent.nodes.eval_experience.get_evaluation_llm", return_value=mock_exp_llm), \
              patch("src.agents.evaluation_agent.nodes.eval_final.get_evaluation_llm", return_value=mock_final_llm):
 
             from src.agents.evaluation_agent.graph import build_evaluation_graph
             graph = build_evaluation_graph()
             result = await graph.ainvoke({
-                "cv_content": sample_cv_text,
-                "job_requirement": sample_jd_text,
+                "cv_parsed": sample_cv_parsed,
+                "jd_parsed": sample_jd_parsed,
                 "errors": [],
             })
 
@@ -402,6 +373,5 @@ class TestFullGraph:
             assert result.get("skill_evaluation") is not None
             assert result.get("experience_evaluation") is not None
             assert result.get("eval_report") is not None
-            # Deterministic scoring: 34 (skill) + 15 (experience) + 14 (education) = 63
             assert result["eval_report"].overall_score == 63.0
 

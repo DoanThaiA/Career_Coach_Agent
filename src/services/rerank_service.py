@@ -1,5 +1,5 @@
 from typing import Optional,List,Tuple
-from sentence_transformers import CrossEncoder
+import cohere
 from src.core.config import settings
 from src.core.logger import get_logger
 from langchain_core.documents import Document
@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 class RerankerService:
     def __init__(self):
         logger.info(f"Initializing RerankerService with model: {settings.RERANK_MODEL}")
-        self.model = CrossEncoder(settings.RERANK_MODEL)
+        self.client = cohere.ClientV2(api_key=settings.COHERE_API_KEY)
 
     def rerank(
         self, 
@@ -25,16 +25,18 @@ class RerankerService:
             return []
         
         texts = [doc.page_content for doc in documents]
-        pairs = [[query, text] for text in texts]
-        scores = self.model.predict(pairs)
         
-        # Kết hợp document với score
-        scored_results = list(zip(documents, scores))
+        response = self.client.rerank(
+            model=settings.RERANK_MODEL,
+            query=query,
+            documents=texts,
+            top_n=top_k
+        )
         
-        # Lọc theo threshold nếu có
-        if score_threshold is not None:
-            scored_results = [res for res in scored_results if res[1] >= score_threshold]
-            
-        # Sắp xếp và lấy top_k
-        results = sorted(scored_results, key=lambda x: x[1], reverse=True)
-        return results[:top_k]
+        scored_results = []
+        for result in response.results:
+            score = result.relevance_score
+            if score_threshold is None or score >= score_threshold:
+                scored_results.append((documents[result.index], score))
+                
+        return scored_results

@@ -41,7 +41,7 @@ def _validate_extension(filename: str) -> str:
 )
 async def upload_document(
     file: UploadFile = File(...),
-    doc_type: DocumentType = Form(DocumentType.GENERAL)
+    doc_type: DocumentType = Form(...)
 ):
     """Upload file tài liệu, lưu vào disk, gửi task xử lý vào Celery queue.
 
@@ -72,14 +72,17 @@ async def upload_document(
     logger.info(f"File uploaded: {file.filename} -> {file_path} ({len(content)} bytes)")
 
     # Gửi task vào Celery
-    from worker.tasks import process_document, process_cv, process_jd
+    from worker.tasks import process_cv, process_jd
     
     if doc_type == DocumentType.CV:
         task = process_cv.delay(file_path)
     elif doc_type == DocumentType.JD:
         task = process_jd.delay(file_path)
     else:
-        task = process_document.delay(file_path)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="doc_type phải là 'cv' hoặc 'jd'",
+        )
 
     return TaskResponse(
         task_id=task.id,
@@ -88,39 +91,7 @@ async def upload_document(
     )
 
 
-# ── POST /documents/process ──
-
-@router.post(
-    "/process",
-    response_model=TaskResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Gửi file_path có sẵn trên server vào hàng đợi xử lý",
-)
-async def process_document_by_path(request: ProcessDocumentRequest):
-    """Gửi task xử lý cho file đã tồn tại trên server (không cần upload)."""
-    # Thêm hỗ trợ doc_type vào model ProcessDocumentRequest nếu cần
-    # Ở đây mặc định gọi luồng general để tương thích ngược.
-    file_path = os.path.abspath(request.file_path)
-
-    if not os.path.isfile(file_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"File không tồn tại: {request.file_path}",
-        )
-
-    _validate_extension(file_path)
-
-    from worker.tasks import process_document
-    task = process_document.delay(file_path)
-
-    return TaskResponse(
-        task_id=task.id,
-        status=TaskStatus.PENDING,
-        message=f"Task đã được tạo cho file: {request.file_path}",
-    )
-
-
-# ── GET /documents/tasks/{task_id} ──
+# Đã xóa /documents/process
 
 @router.get(
     "/tasks/{task_id}",

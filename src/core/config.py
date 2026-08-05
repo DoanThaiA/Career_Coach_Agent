@@ -6,21 +6,20 @@ class Settings(BaseSettings):
     QDRANT_PORT: int
     QDRANT_COLLECTION_NAME: str
     
-    LLM_BASE_URL:str
-    LLM_MODEL_QWEN25:str
-    LLM_API_KEY:str
+    COHERE_API_KEY: str
+    LLM_MODEL: str
     LLM_MAX_TOKENS: int
-
-    LANGFUSE_PUBLIC_KEY: str = ""
-    LANGFUSE_SECRET_KEY: str = ""
-    LANGFUSE_HOST: str = "http://localhost:3000"
-
+    
     VECTOR_DIMENSION: int
     EMBEDDING_MODEL: str
-    OLLAMA_BASE_URL: str
+    RERANK_MODEL: str
 
     RABBITMQ_URL: str
     REDIS_URL: str 
+
+    LANGFUSE_PUBLIC_KEY: str
+    LANGFUSE_SECRET_KEY: str
+    LANGFUSE_HOST: str 
 
     UPLOAD_DIR: str 
     MAX_FILE_SIZE_MB: int 
@@ -29,11 +28,6 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int 
     TOKENIZER_MODEL: str 
     CHUNK_CONTEXT_RESERVED_TOKENS: int
-
-    LLM_URL: str
-    LLM_MODEL: str
-
-    RERANK_MODEL: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

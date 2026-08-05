@@ -2,12 +2,12 @@ from typing import TypedDict, Optional, Annotated, List
 from operator import add
 
 from src.agents.evaluation_agent.output_schema import (
-    CVInformation,
-    JDRequirements,
     SkillEvaluationResult,
     ExperienceEvaluationResult,
     EvaluationReport,
 )
+from src.services.parse_cv import CVInformation
+from src.services.parse_jd import JDRequirements
 
 
 class EvaluationState(TypedDict):

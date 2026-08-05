@@ -32,6 +32,8 @@ from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 
+from src.api.schemas import InterviewStartByIdRequest
+
 class InterviewStartRequest(BaseModel):
     """Request body để bắt đầu phiên phỏng vấn mới."""
     cv_parsed: Dict[str, Any] = Field(
@@ -170,8 +172,30 @@ async def start_interview(request: InterviewStartRequest):
         logger.error(f"✖ Lỗi khi khởi tạo phỏng vấn: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi hệ thống khi khởi tạo phỏng vấn: {str(e)}",
+            detail=f"Lỗi hệ thống: {str(e)}",
         )
+
+
+@router.post(
+    "/start_by_id",
+    response_model=InterviewResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Bắt đầu phiên phỏng vấn từ ID của CV và JD",
+)
+async def start_interview_by_id(request: InterviewStartByIdRequest):
+    """Khởi tạo phiên phỏng vấn mới, tự động lấy dữ liệu từ MongoDB."""
+    from src.database.mongodb import MongoDBClient
+    
+    cv_doc = await MongoDBClient.get_cv_by_id(request.cv_id)
+    if not cv_doc:
+        raise HTTPException(status_code=404, detail="CV không tồn tại")
+        
+    jd_doc = await MongoDBClient.get_jd_by_id(request.jd_id)
+    if not jd_doc:
+        raise HTTPException(status_code=404, detail="JD không tồn tại")
+        
+    start_req = InterviewStartRequest(cv_parsed=cv_doc, jd_parsed=jd_doc)
+    return await start_interview(start_req)
 
 
 # ══════════════════════════════════════════════
