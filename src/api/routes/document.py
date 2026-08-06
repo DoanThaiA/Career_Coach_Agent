@@ -170,3 +170,48 @@ async def get_jd(jd_id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.put("/cvs/{cv_id}", summary="Cập nhật chi tiết 1 CV")
+async def update_cv(cv_id: str, data: dict):
+    from src.database.mongodb import MongoDBClient
+    try:
+        success = await MongoDBClient.update_cv(cv_id, data)
+        if not success:
+            # Maybe the CV doesn't exist, or no fields were changed
+            pass
+        return {"message": "Cập nhật thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/jds/{jd_id}", summary="Cập nhật chi tiết 1 JD")
+async def update_jd(jd_id: str, data: dict):
+    from src.database.mongodb import MongoDBClient
+    try:
+        success = await MongoDBClient.update_jd(jd_id, data)
+        if not success:
+            pass
+        return {"message": "Cập nhật thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/cvs/{cv_id}", summary="Xóa 1 CV")
+async def delete_cv(cv_id: str):
+    from src.database.mongodb import MongoDBClient
+    try:
+        success = await MongoDBClient.delete_cv(cv_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="CV không tồn tại")
+        return {"message": "Xóa CV thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/jds/{jd_id}", summary="Xóa 1 JD")
+async def delete_jd(jd_id: str):
+    from src.database.mongodb import MongoDBClient
+    try:
+        success = await MongoDBClient.delete_jd(jd_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="JD không tồn tại")
+        return {"message": "Xóa JD thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

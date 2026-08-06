@@ -1,10 +1,13 @@
 import uuid
-from typing import Optional
-from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect
+import json
+from typing import Optional, AsyncGenerator
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 
 from src.agents.interview_agent.graph import build_interview_graph
-from src.agents.interview_agent.output_schema import CVInformation, JDRequirements
+from src.services.parse_cv import CVInformation
+from src.services.parse_jd import JDRequirements
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -25,14 +28,14 @@ def _get_graph():
 
 
 # ══════════════════════════════════════════════
-#  POST /interview/start — Bắt đầu phiên phỏng vấn
+#  Schemas
 # ══════════════════════════════════════════════
 
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
-
 from src.api.schemas import InterviewStartByIdRequest
+
 
 class InterviewStartRequest(BaseModel):
     """Request body để bắt đầu phiên phỏng vấn mới."""
@@ -61,6 +64,26 @@ class InterviewResponse(BaseModel):
     final_decision: Optional[str] = Field(default=None, description="Kết quả (Pass/Fail/Consider)")
     report: Optional[str] = Field(default=None, description="Báo cáo phỏng vấn (Markdown)")
     error: Optional[str] = Field(default=None, description="Thông báo lỗi nếu có")
+
+
+# ── Tên node thân thiện (hiện ra trên UI) ──
+_NODE_LABELS = {
+    "interview_plan_node":      "📋 Đang lập kế hoạch phỏng vấn…",
+    "early_rejection_node":     "❌ Dữ liệu không hợp lệ, kết thúc sớm.",
+    "question_generator_node":  "💬 Đang soạn câu hỏi…",
+    "evidence_extractor_node":  "🔍 Đang phân tích câu trả lời…",
+    "scoring_engine_node":      "📊 Đang chấm điểm…",
+    "followup_decision_node":   "🤔 Đang quyết định hỏi thêm…",
+    "followup_generator_node":  "💬 Đang soạn câu hỏi phụ…",
+    "topic_completion_node":    "✅ Đang chốt chủ đề…",
+    "report_generator_node":    "📝 Đang tổng hợp báo cáo…",
+}
+
+
+def _sse(event_type: str, data: Any) -> str:
+    """Serialize một sự kiện SSE."""
+    payload = json.dumps({"type": event_type, "data": data}, ensure_ascii=False)
+    return f"data: {payload}\n\n"
 
 
 def _extract_response(state: dict, thread_id: str) -> InterviewResponse:
@@ -102,6 +125,64 @@ def _extract_response(state: dict, thread_id: str) -> InterviewResponse:
     )
 
 
+# ══════════════════════════════════════════════
+#  Helper: Streaming event generator
+# ══════════════════════════════════════════════
+
+async def _stream_graph(
+    graph,
+    input_data,
+    config: dict,
+    thread_id: str,
+) -> AsyncGenerator[str, None]:
+    """
+    Async generator phát SSE events từ LangGraph.
+
+    Các loại event phát ra:
+    - node_start   : khi một node bắt đầu chạy (kèm tên friendly)
+    - llm_token    : mỗi token từ LLM (streaming)
+    - done         : kết quả cuối cùng (InterviewResponse)
+    - error        : khi có lỗi
+    """
+    final_state = None
+    try:
+        async for event in graph.astream_events(input_data, config, version="v2"):
+            kind = event["event"]
+            name = event.get("name", "")
+
+            # Thông báo tiến trình node
+            if kind == "on_chain_start" and name in _NODE_LABELS:
+                yield _sse("node_start", {
+                    "node": name,
+                    "label": _NODE_LABELS[name]
+                })
+
+            # Stream token từ LLM (câu hỏi, báo cáo…)
+            elif kind == "on_chat_model_stream":
+                chunk = event.get("data", {}).get("chunk")
+                if chunk and hasattr(chunk, "content") and chunk.content:
+                    yield _sse("llm_token", {"token": chunk.content})
+
+            # Bắt state cuối khi graph kết thúc
+            elif kind == "on_chain_end" and name == "LangGraph":
+                final_state = event.get("data", {}).get("output")
+
+        # Phát kết quả cuối
+        if final_state:
+            response = _extract_response(final_state, thread_id)
+            yield _sse("done", response.model_dump())
+        else:
+            yield _sse("error", {"message": "Không nhận được kết quả từ Graph."})
+
+    except Exception as e:
+        logger.error(f"✖ Lỗi streaming interview graph: {e}", exc_info=True)
+        yield _sse("error", {"message": str(e)})
+
+
+# ══════════════════════════════════════════════
+#  POST /interview/start — Bắt đầu phiên phỏng vấn (JSON, không stream)
+# ══════════════════════════════════════════════
+
 @router.post(
     "/start",
     response_model=InterviewResponse,
@@ -109,18 +190,10 @@ def _extract_response(state: dict, thread_id: str) -> InterviewResponse:
     summary="Bắt đầu phiên phỏng vấn mới",
 )
 async def start_interview(request: InterviewStartRequest):
-    """Khởi tạo phiên phỏng vấn mới với dữ liệu CV + JD đã parse.
-
-    Flow:
-    1. Validate CV/JD data
-    2. Tạo thread_id mới
-    3. Chạy graph đến interrupt (sinh câu hỏi đầu tiên)
-    4. Trả về câu hỏi cho client
-    """
+    """Khởi tạo phiên phỏng vấn mới với dữ liệu CV + JD đã parse."""
     thread_id = uuid.uuid4().hex
 
     try:
-        # Validate bằng Pydantic schema
         cv_info = CVInformation.model_validate(request.cv_parsed)
         jd_info = JDRequirements.model_validate(request.jd_parsed)
     except Exception as e:
@@ -130,35 +203,20 @@ async def start_interview(request: InterviewStartRequest):
         )
 
     graph = _get_graph()
-    
+
     from src.core.monitoring import get_langfuse_handler
     langfuse_handler = get_langfuse_handler(session_id=thread_id)
     config = {"configurable": {"thread_id": thread_id}}
     if langfuse_handler:
         config["callbacks"] = [langfuse_handler]
+        config["metadata"] = {"langfuse_session_id": thread_id}
 
-    initial_state = {
-        "cv_parsed": cv_info,
-        "jd_parsed": jd_info,
-        "topics": [],
-        "current_topic_index": 0,
-        "messages": [],
-        "extracted_evidence": {},
-        "topic_scores": {},
-        "score_reasonings": {},
-        "final_decision": "",
-        "report": "",
-        "requires_followup": False,
-        "followup_count": 0,
-        "errors": [],
-    }
+    initial_state = _build_initial_state(cv_info, jd_info)
 
     try:
-        # ainvoke sẽ chạy đến interrupt_after (question_generator_node)
         result = await graph.ainvoke(initial_state, config)
         logger.info(f"✔ Phiên phỏng vấn {thread_id} đã khởi tạo thành công")
 
-        # Kiểm tra nếu bị early_rejection
         if result.get("final_decision") == "Cancelled":
             return InterviewResponse(
                 thread_id=thread_id,
@@ -176,6 +234,64 @@ async def start_interview(request: InterviewStartRequest):
         )
 
 
+# ══════════════════════════════════════════════
+#  POST /interview/start/stream — Bắt đầu phiên phỏng vấn (SSE Streaming)
+# ══════════════════════════════════════════════
+
+@router.post(
+    "/start/stream",
+    summary="Bắt đầu phiên phỏng vấn mới (SSE Streaming)",
+    response_class=StreamingResponse,
+)
+async def start_interview_stream(request: InterviewStartRequest):
+    """
+    Khởi tạo phiên phỏng vấn mới với Server-Sent Events.
+
+    Các sự kiện SSE client nhận được:
+    - `node_start` : node bắt đầu chạy {node, label}
+    - `llm_token`  : token LLM realtime {token}
+    - `done`       : kết quả cuối cùng (InterviewResponse JSON)
+    - `error`      : lỗi {message}
+
+    **Quan trọng**: `thread_id` được gửi trong event `done.thread_id`.
+    Client cần lưu lại để gọi `/answer/stream`.
+    """
+    thread_id = uuid.uuid4().hex
+
+    try:
+        cv_info = CVInformation.model_validate(request.cv_parsed)
+        jd_info = JDRequirements.model_validate(request.jd_parsed)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Dữ liệu CV/JD không hợp lệ: {str(e)}",
+        )
+
+    graph = _get_graph()
+
+    from src.core.monitoring import get_langfuse_handler
+    langfuse_handler = get_langfuse_handler(session_id=thread_id)
+    config = {"configurable": {"thread_id": thread_id}}
+    if langfuse_handler:
+        config["callbacks"] = [langfuse_handler]
+        config["metadata"] = {"langfuse_session_id": thread_id}
+
+    initial_state = _build_initial_state(cv_info, jd_info)
+
+    return StreamingResponse(
+        _stream_graph(graph, initial_state, config, thread_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ══════════════════════════════════════════════
+#  POST /interview/start_by_id — Từ ID MongoDB (JSON)
+# ══════════════════════════════════════════════
+
 @router.post(
     "/start_by_id",
     response_model=InterviewResponse,
@@ -185,21 +301,46 @@ async def start_interview(request: InterviewStartRequest):
 async def start_interview_by_id(request: InterviewStartByIdRequest):
     """Khởi tạo phiên phỏng vấn mới, tự động lấy dữ liệu từ MongoDB."""
     from src.database.mongodb import MongoDBClient
-    
+
     cv_doc = await MongoDBClient.get_cv_by_id(request.cv_id)
     if not cv_doc:
         raise HTTPException(status_code=404, detail="CV không tồn tại")
-        
+
     jd_doc = await MongoDBClient.get_jd_by_id(request.jd_id)
     if not jd_doc:
         raise HTTPException(status_code=404, detail="JD không tồn tại")
-        
+
     start_req = InterviewStartRequest(cv_parsed=cv_doc, jd_parsed=jd_doc)
     return await start_interview(start_req)
 
 
 # ══════════════════════════════════════════════
-#  POST /interview/answer — Ứng viên trả lời
+#  POST /interview/start_by_id/stream — Từ ID MongoDB (SSE)
+# ══════════════════════════════════════════════
+
+@router.post(
+    "/start_by_id/stream",
+    summary="Bắt đầu phiên phỏng vấn từ ID (SSE Streaming)",
+    response_class=StreamingResponse,
+)
+async def start_interview_by_id_stream(request: InterviewStartByIdRequest):
+    """SSE streaming từ CV/JD ID trong MongoDB."""
+    from src.database.mongodb import MongoDBClient
+
+    cv_doc = await MongoDBClient.get_cv_by_id(request.cv_id)
+    if not cv_doc:
+        raise HTTPException(status_code=404, detail="CV không tồn tại")
+
+    jd_doc = await MongoDBClient.get_jd_by_id(request.jd_id)
+    if not jd_doc:
+        raise HTTPException(status_code=404, detail="JD không tồn tại")
+
+    start_req = InterviewStartRequest(cv_parsed=cv_doc, jd_parsed=jd_doc)
+    return await start_interview_stream(start_req)
+
+
+# ══════════════════════════════════════════════
+#  POST /interview/answer — Ứng viên trả lời (JSON)
 # ══════════════════════════════════════════════
 
 @router.post(
@@ -209,22 +350,16 @@ async def start_interview_by_id(request: InterviewStartByIdRequest):
     summary="Gửi câu trả lời của ứng viên",
 )
 async def answer_question(request: InterviewAnswerRequest):
-    """Gửi câu trả lời của ứng viên và tiếp tục flow phỏng vấn.
-
-    Flow:
-    1. Inject HumanMessage vào state
-    2. Resume graph (tiếp tục từ interrupt)
-    3. Graph xử lý: evidence → scoring → decision → (followup hoặc next topic)
-    4. Trả về câu hỏi tiếp theo hoặc kết quả cuối cùng
-    """
+    """Gửi câu trả lời của ứng viên và tiếp tục flow phỏng vấn."""
     thread_id = request.thread_id
     graph = _get_graph()
-    
+
     from src.core.monitoring import get_langfuse_handler
     langfuse_handler = get_langfuse_handler(session_id=thread_id)
     config = {"configurable": {"thread_id": thread_id}}
     if langfuse_handler:
         config["callbacks"] = [langfuse_handler]
+        config["metadata"] = {"langfuse_session_id": thread_id}
 
     # Kiểm tra thread tồn tại
     current_state = graph.get_state(config)
@@ -235,14 +370,8 @@ async def answer_question(request: InterviewAnswerRequest):
         )
 
     try:
-        # Inject câu trả lời vào state
         human_msg = HumanMessage(content=request.answer)
-        
-        # Trong LangGraph, để resume graph đang pause ở interrupt_after,
-        # ta cần update state trước, sau đó gọi ainvoke(None).
-        # Nếu gọi ainvoke(payload), nó sẽ start run mới từ entry point.
         await graph.aupdate_state(config, {"messages": [human_msg]})
-        
         result = await graph.ainvoke(None, config)
 
         logger.info(f"✔ Phiên {thread_id}: đã xử lý câu trả lời")
@@ -254,6 +383,58 @@ async def answer_question(request: InterviewAnswerRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi hệ thống: {str(e)}",
         )
+
+
+# ══════════════════════════════════════════════
+#  POST /interview/answer/stream — Ứng viên trả lời (SSE Streaming)
+# ══════════════════════════════════════════════
+
+@router.post(
+    "/answer/stream",
+    summary="Gửi câu trả lời của ứng viên (SSE Streaming)",
+    response_class=StreamingResponse,
+)
+async def answer_question_stream(request: InterviewAnswerRequest):
+    """
+    Gửi câu trả lời và nhận phản hồi từ Agent qua Server-Sent Events.
+
+    Các sự kiện SSE client nhận được:
+    - `node_start` : node bắt đầu chạy {node, label}
+    - `llm_token`  : token LLM realtime {token}
+    - `done`       : kết quả cuối cùng (InterviewResponse JSON)
+    - `error`      : lỗi {message}
+    """
+    thread_id = request.thread_id
+    graph = _get_graph()
+
+    from src.core.monitoring import get_langfuse_handler
+    langfuse_handler = get_langfuse_handler(session_id=thread_id)
+    config = {"configurable": {"thread_id": thread_id}}
+    if langfuse_handler:
+        config["callbacks"] = [langfuse_handler]
+        config["metadata"] = {"langfuse_session_id": thread_id}
+
+    # Kiểm tra thread tồn tại trước
+    current_state = graph.get_state(config)
+    if current_state is None or current_state.values is None or not current_state.values:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy phiên phỏng vấn: {thread_id}",
+        )
+
+    # Inject câu trả lời vào state
+    human_msg = HumanMessage(content=request.answer)
+    await graph.aupdate_state(config, {"messages": [human_msg]})
+
+    # Stream events từ graph (resume từ interrupt)
+    return StreamingResponse(
+        _stream_graph(graph, None, config, thread_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ══════════════════════════════════════════════
@@ -282,119 +463,22 @@ async def get_interview_status(thread_id: str):
 
 
 # ══════════════════════════════════════════════
-#  WS /interview/ws — Real-time Streaming
+#  Helper: Build initial state
 # ══════════════════════════════════════════════
 
-@router.websocket("/ws")
-async def websocket_interview_endpoint(websocket: WebSocket):
-    """
-    Kết nối WebSocket cho phỏng vấn.
-    Client gửi JSON format:
-    - Bắt đầu: {"type": "start", "payload": {"cv_parsed": {...}, "jd_parsed": {...}}}
-    - Trả lời: {"type": "answer", "payload": {"thread_id": "...", "answer": "..."}}
-    """
-    await websocket.accept()
-    logger.info("✔ Khởi tạo kết nối WebSocket thành công")
-    
-    try:
-        while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type")
-            payload = data.get("payload", {})
-
-            if msg_type == "start":
-                thread_id = uuid.uuid4().hex
-                try:
-                    cv_info = CVInformation.model_validate(payload.get("cv_parsed", {}))
-                    jd_info = JDRequirements.model_validate(payload.get("jd_parsed", {}))
-                except Exception as e:
-                    await websocket.send_json({"error": f"Dữ liệu CV/JD không hợp lệ: {str(e)}"})
-                    continue
-
-                graph = _get_graph()
-                
-                from src.core.monitoring import get_langfuse_handler
-                langfuse_handler = get_langfuse_handler(session_id=thread_id)
-                config = {"configurable": {"thread_id": thread_id}}
-                if langfuse_handler:
-                    config["callbacks"] = [langfuse_handler]
-
-                initial_state = {
-                    "cv_parsed": cv_info,
-                    "jd_parsed": jd_info,
-                    "topics": [],
-                    "current_topic_index": 0,
-                    "messages": [],
-                    "extracted_evidence": {},
-                    "topic_scores": {},
-                    "score_reasonings": {},
-                    "final_decision": "",
-                    "report": "",
-                    "requires_followup": False,
-                    "followup_count": 0,
-                    "errors": [],
-                }
-
-                try:
-                    result = await graph.ainvoke(initial_state, config)
-                    logger.info(f"✔ [WS] Phiên phỏng vấn {thread_id} đã khởi tạo thành công")
-
-                    if result.get("final_decision") == "Cancelled":
-                        resp = InterviewResponse(
-                            thread_id=thread_id,
-                            status="error",
-                            error=result.get("report", "Phỏng vấn bị hủy do lỗi dữ liệu đầu vào.")
-                        )
-                    else:
-                        resp = _extract_response(result, thread_id)
-                    
-                    await websocket.send_json(resp.model_dump())
-                except Exception as e:
-                    logger.error(f"✖ [WS] Lỗi khi khởi tạo phỏng vấn: {e}", exc_info=True)
-                    await websocket.send_json({"error": f"Lỗi hệ thống: {str(e)}"})
-
-            elif msg_type == "answer":
-                thread_id = payload.get("thread_id")
-                answer_text = payload.get("answer")
-                
-                if not thread_id or not answer_text:
-                    await websocket.send_json({"error": "Thiếu thread_id hoặc answer trong payload"})
-                    continue
-
-                graph = _get_graph()
-                
-                from src.core.monitoring import get_langfuse_handler
-                langfuse_handler = get_langfuse_handler(session_id=thread_id)
-                config = {"configurable": {"thread_id": thread_id}}
-                if langfuse_handler:
-                    config["callbacks"] = [langfuse_handler]
-
-                current_state = graph.get_state(config)
-                if current_state is None or current_state.values is None or not current_state.values:
-                    await websocket.send_json({"error": f"Không tìm thấy phiên phỏng vấn: {thread_id}"})
-                    continue
-
-                try:
-                    human_msg = HumanMessage(content=answer_text)
-                    await graph.aupdate_state(config, {"messages": [human_msg]})
-                    
-                    result = await graph.ainvoke(None, config)
-                    logger.info(f"✔ [WS] Phiên {thread_id}: đã xử lý câu trả lời")
-                    
-                    resp = _extract_response(result, thread_id)
-                    await websocket.send_json(resp.model_dump())
-                except Exception as e:
-                    logger.error(f"✖ [WS] Lỗi khi xử lý câu trả lời phiên {thread_id}: {e}", exc_info=True)
-                    await websocket.send_json({"error": f"Lỗi hệ thống: {str(e)}"})
-            
-            else:
-                await websocket.send_json({"error": f"Loại message không được hỗ trợ: {msg_type}"})
-
-    except WebSocketDisconnect:
-        logger.info("✔ Client đã ngắt kết nối WebSocket")
-    except Exception as e:
-        logger.error(f"✖ Lỗi kết nối WebSocket: {e}", exc_info=True)
-        try:
-            await websocket.close()
-        except:
-            pass
+def _build_initial_state(cv_info: CVInformation, jd_info: JDRequirements) -> dict:
+    return {
+        "cv_parsed": cv_info,
+        "jd_parsed": jd_info,
+        "topics": [],
+        "current_topic_index": 0,
+        "messages": [],
+        "extracted_evidence": {},
+        "topic_scores": {},
+        "score_reasonings": {},
+        "final_decision": "",
+        "report": "",
+        "requires_followup": False,
+        "followup_count": 0,
+        "errors": [],
+    }

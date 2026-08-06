@@ -4,10 +4,11 @@ from src.agents.interview_agent.prompt import REPORT_PROMPT
 from src.agents.interview_agent.state import InterviewState
 from src.agents.interview_agent.output_schema import FinalInterviewReport
 from src.core.logger import get_logger
+from langchain_core.runnables.config import RunnableConfig
 
 logger = get_logger(__name__)
 
-async def report_generator(state: InterviewState) -> dict:
+async def report_generator(state: InterviewState, config: RunnableConfig) -> dict:
     """Node tổng hợp dữ liệu và xuất báo cáo phỏng vấn chi tiết."""
     logger.info(" Bắt đầu xử lý report_generator_node ...")
     
@@ -25,14 +26,17 @@ async def report_generator(state: InterviewState) -> dict:
 
     try:
         llm = get_extraction_llm()
+        jd_parsed_obj = state.get("jd_parsed")
+        jd_text = state.get("slim_jd_text") or (jd_parsed_obj.model_dump_json(indent=None, ensure_ascii=False) if jd_parsed_obj else "Không có JD")
+        
         prompt = REPORT_PROMPT.format(
-            jd_parsed=state.get("jd_parsed", "Không có JD"),
+            jd_parsed=jd_text,
             evaluation_summary=evaluation_summary
         ) + get_schema_instruction(FinalInterviewReport)
         
         # 2. Gọi LLM sinh báo cáo cấu trúc
         result: FinalInterviewReport = await generate_with_retry_and_correction(
-            llm, prompt, FinalInterviewReport, max_retries=3
+            llm, prompt, FinalInterviewReport, max_retries=3, config=config
         )
         
         # 3. Render Markdown siêu chi tiết

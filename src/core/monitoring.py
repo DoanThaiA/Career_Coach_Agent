@@ -1,8 +1,16 @@
+import logging
 from langfuse.langchain import CallbackHandler
 from src.core.config import settings
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+logging.getLogger("opentelemetry.exporter.otlp.proto.http.trace_exporter").setLevel(logging.ERROR)
+logging.getLogger("opentelemetry.exporter.otlp.proto.http.metric_exporter").setLevel(logging.ERROR)
+logging.getLogger("opentelemetry.exporter.otlp.proto.http._log_exporter").setLevel(logging.ERROR)
+
+_langfuse_healthy = True
 
 def get_langfuse_handler(session_id: str = None, user_id: str = None) -> CallbackHandler | None:
     """Khởi tạo CallbackHandler cho Langfuse.

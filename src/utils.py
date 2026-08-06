@@ -11,6 +11,7 @@ import re
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+from langchain_core.runnables.config import RunnableConfig
 
 
 def parse_llm_json(text: str, schema: Type[T]) -> T:
@@ -153,7 +154,7 @@ async def generate_with_retry_and_correction(
     prompt: str, 
     schema_class: Type[T], 
     max_retries: int = 3,
-    callbacks: Optional[List[BaseCallbackHandler]] = None
+    config: Optional[RunnableConfig] = None
 ) -> T:
     """Gọi LLM và parse JSON, nếu lỗi sẽ feed lỗi ngược lại để LLM tự sửa.
     
@@ -165,7 +166,6 @@ async def generate_with_retry_and_correction(
     
     for attempt in range(max_retries):
         try:
-            config = {"callbacks": callbacks} if callbacks else None
             response = await llm.ainvoke(current_prompt, config=config)
             raw_text = response.content
             logger.debug(f"LLM raw output ({len(raw_text)} chars) - Attempt {attempt+1}")
@@ -216,34 +216,35 @@ def get_llm() -> ChatCohere:
         cohere_api_key=settings.COHERE_API_KEY,
         model=settings.LLM_MODEL,
         temperature=0.7,
+        max_tokens=2048,
     )
 
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> ChatCohere:
-    """LLM cho extraction (CV/JD parsing).
+    """LLM cho extraction (CV/JD parsing và các node cần JSON output chính xác).
     
-    - streaming=False: bắt buộc cho structured output trên LLM local.
     - temperature=0.1: bóc tách chính xác, không hallucinate.
-    - max_tokens cao hơn mặc định vì JSON output có thể dài.
+    - max_tokens=4096: đủ rộng cho JSON dài của CV phức tạp.
     """
     return ChatCohere(
         cohere_api_key=settings.COHERE_API_KEY,
         model=settings.LLM_MODEL,
         temperature=0.1,
+        max_tokens=4096,
     )
 
 
 @lru_cache(maxsize=1)
 def get_evaluation_llm() -> ChatCohere:
-    """LLM cho evaluation (đánh giá CV vs JD).
+    """LLM cho evaluation (feedback, scoring).
     
-    - streaming=False: bắt buộc cho structured output.
     - temperature=0.3: cân bằng sáng tạo và chính xác.
-    - max_tokens cao vì EvaluationReport JSON rất dài.
+    - max_tokens=2048: đủ cho feedback JSON.
     """
     return ChatCohere(
         cohere_api_key=settings.COHERE_API_KEY,
         model=settings.LLM_MODEL,
         temperature=0.3,
+        max_tokens=2048,
     )

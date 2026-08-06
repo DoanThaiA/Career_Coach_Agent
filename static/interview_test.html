@@ -227,6 +227,40 @@
 
         // --- Initialization ---
         window.onload = async () => {
+            const threadId = sessionStorage.getItem('interview_thread_id');
+            if (threadId) {
+                currentThreadId = threadId;
+                $('chatSection').classList.remove('hidden');
+                $('setupSection').style.display = 'none';
+                $('startBtnContainer').style.display = 'none';
+                $('startBtnSpacer').style.display = 'none';
+                
+                // Retrieve initial question from sessionStorage (set by dashboard)
+                const firstQuestion = sessionStorage.getItem('first_question');
+                if (firstQuestion) {
+                    // Create a mock response object to trigger handleResponse correctly
+                    const mockData = {
+                        status: 'interviewing',
+                        question: firstQuestion,
+                        topic_index: 0,
+                        total_topics: 3,
+                        current_topic: "Bắt đầu phỏng vấn"
+                    };
+                    handleResponse(mockData);
+                    sessionStorage.removeItem('first_question'); // Only show once
+                } else {
+                    // If no first_question, try to fetch status
+                    try {
+                        const res = await fetch(`${API_INTERVIEW_BASE}/status/${threadId}`);
+                        const data = await res.json();
+                        if (res.ok) handleResponse(data);
+                    } catch(e) {
+                        setStatus('error', `Lỗi khôi phục: ${e.message}`);
+                    }
+                }
+                return;
+            }
+
             await Promise.all([fetchCvs(), fetchJds()]);
             checkReadyState();
         };

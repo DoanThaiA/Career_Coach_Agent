@@ -6,7 +6,7 @@
     <title>AI Recruitment Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=2">
 </head>
 <body>
     <div class="app-container">
@@ -124,9 +124,9 @@
 
     <!-- Evaluation Modal -->
     <div class="modal" id="eval-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <span class="close-btn" id="close-eval-modal">&times;</span>
-            <h2 class="modal-title">Evaluation Report</h2>
+            <h2 class="modal-title" style="margin-bottom: 20px;">Evaluation Report</h2>
             <div id="eval-loading" class="loading-spinner hidden">
                 <div class="spinner"></div>
                 <p>AI is analyzing the candidate... Please wait.</p>
@@ -137,6 +137,26 @@
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js"></script>
+    <!-- Document Edit Modal -->
+    <div class="modal" id="doc-edit-modal">
+        <div class="modal-content doc-edit-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="doc-edit-title">Edit Document</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-save-doc"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+                    <span class="close-btn" id="close-doc-edit-modal">&times;</span>
+                </div>
+            </div>
+            <div id="doc-edit-loading" class="loading-spinner hidden">
+                <div class="spinner"></div>
+                <p>Loading document data...</p>
+            </div>
+            <div id="doc-edit-form-container" class="doc-edit-form-container hidden">
+                <!-- Dynamic form rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js?v=2"></script>
 </body>
 </html>

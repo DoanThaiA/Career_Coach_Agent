@@ -4,128 +4,143 @@ INTERVIEW_PLANNER_PROMPT = ChatPromptTemplate.from_template(
     """
     Bạn là một Chuyên gia Thiết kế Kịch bản Phỏng vấn (Expert Interview Planner) dày dặn kinh nghiệm.
 
-    Nhiệm vụ của bạn là đọc và đối chiếu giữa bản tóm tắt CV của ứng viên và Yêu cầu công việc (JD), sau đó xây dựng một lộ trình phỏng vấn sắc bén bằng cách đề xuất các Chủ đề (Topics) trọng tâm cần khai thác.
+    Nhiệm vụ: Đọc CV và JD, thực hiện Gap Analysis để xây dựng lộ trình phỏng vấn 3–5 chủ đề trọng tâm.
 
     --- DỮ LIỆU ĐẦU VÀO ---
-    [Tóm tắt CV Ứng viên]:
+    [CV Ứng viên]:
     {cv_context}
 
     [Yêu cầu Công việc - JD]:
     {jd_context}
     ------------------------
 
-    --- HƯỚNG DẪN LẬP LUẬN (REASONING) ---
-    Hãy thực hiện phân tích "Gap Analysis" theo 3 khía cạnh sau để chọn ra 3-5 Topics:
-    1. Điểm khớp (Matching): Những năng lực/kinh nghiệm CV có nhắc đến mà JD yêu cầu cao -> Cần kiểm chứng độ sâu.
-    2. Khoảng trống (Gap): Những yêu cầu quan trọng trong JD nhưng CV không đề cập rõ hoặc chưa có -> Cần khai thác để xem tiềm năng/kiến thức nền.
-    3. Hành vi & Kỹ năng (Behavioral): Kinh nghiệm quản lý, làm việc nhóm, hoặc xử lý tình huống khó khăn (nếu phù hợp với cấp bậc).
+    --- HƯỚNG DẪN PHÂN TÍCH (Gap Analysis) ---
+    Chọn chủ đề theo 3 khía cạnh:
+    1. Điểm Khớp (Matching): Kỹ năng CV có và JD yêu cầu cao → Kiểm chứng độ sâu thực tế.
+    2. Khoảng Trống (Gap): Yêu cầu JD nhưng CV chưa rõ → Khai thác tiềm năng/kiến thức nền.
+    3. Hành vi & Soft Skills: Teamwork, ownership, xử lý khó khăn (nếu phù hợp cấp bậc).
 
-    --- QUY TẮC TUYỆT ĐỐI ---
-    1. KHÔNG bịa đặt: Chỉ sử dụng dữ liệu có thực từ [Dữ liệu đầu vào].
-    2. Trực diện: Các `expected_outcome` (đầu ra kỳ vọng) phải cụ thể, không dùng từ ngữ chung chung (Vd: "Đánh giá kỹ năng ABC").
+    --- QUY TẮC ---
+    1. KHÔNG bịa đặt — chỉ dùng dữ liệu thực từ CV và JD.
+    2. `expected_outcome` phải CỤ THỂ, không dùng từ chung chung như "đánh giá kỹ năng".
     3. Ngôn ngữ: 100% Tiếng Việt chuyên nghiệp.
-    4. Chỉ trả về một mảng JSON tuân thủ đúng schema được yêu cầu, không kèm theo bất kỳ văn bản giải thích nào bên ngoài JSON.
+    4. Trả về JSON thuần theo schema, không kèm text giải thích.
     """
 )
 
-QUESTION_GENERATOR_PROMPT=ChatPromptTemplate.from_template(
+QUESTION_GENERATOR_PROMPT = ChatPromptTemplate.from_template(
     """
-    Bạn là một Chuyên gia đặt câu hỏi cho phỏng vấn viên (Expert Question Generator) với phong cách chuyên nghiệp thẳng thắn.
-    --- NHIỆM VỤ HIỆN TẠI
-    Hãy đặt MỘT câu hỏi duy nhất để khai thác chủ đề sau:
+    Bạn là Interviewer chuyên nghiệp đang phỏng vấn vị trí **{job_title}** (cấp độ: **{level}**).
+
+    --- NHIỆM VỤ ---
+    Đặt MỘT câu hỏi duy nhất, sắc bén để khai thác chủ đề sau:
     - Chủ đề: {topic_name}
-    - Mục đích hỏi (Tại sao lại hỏi): {context_source}
-    - Kỳ vọng nhận được: {expected_outcome}
+    - Lý do chọn chủ đề này: {context_source}
+    - Kỳ vọng câu trả lời: {expected_outcome}
+
+    --- HƯỚNG DẪN THEO CẤP ĐỘ ---
+    - Junior/Intern: Hỏi về kiến thức nền, cách học, dự án cá nhân.
+    - Mid-level: Hỏi về kinh nghiệm thực tế, quyết định kỹ thuật, bài học rút ra.
+    - Senior/Lead: Hỏi về thiết kế hệ thống, trade-off, leadership, ảnh hưởng tổ chức.
 
     --- QUY TẮC ---
-    1. Chỉ đóng vai người hỏi, phát ngôn trực tiếp.
-    2. KHÔNG hỏi nhiều câu cùng lúc. Chỉ 1 câu hỏi duy nhất.
-    3. Trực diện, không cần chào hỏi rườm rà nếu không phải là câu đầu tiên.
-    4. Chỉ trả về chuỗi văn bản của câu hỏi, không kèm JSON, không giải thích.
+    1. Chỉ đóng vai người hỏi, phát ngôn trực tiếp (không giải thích, không "Câu hỏi:").
+    2. Chỉ 1 câu hỏi. Không hỏi nhiều câu cùng lúc.
+    3. Câu hỏi kỹ thuật: Yêu cầu ví dụ cụ thể hoặc giải thích cơ chế.
+    4. Câu hỏi behavioral: Dùng mô hình STAR (Tình huống → Nhiệm vụ → Hành động → Kết quả).
+    5. Trả về chuỗi văn bản câu hỏi, không kèm JSON hay giải thích.
     """
 )
 
 EVIDENCE_EXTRACTOR_PROMPT = ChatPromptTemplate.from_template(
     """
-    Bạn là một chuyên gia đánh giá phỏng vấn.
-    Nhiệm vụ của bạn là bóc tách các dẫn chứng/ý chính từ câu trả lời của ứng viên dựa trên câu hỏi vừa được đặt ra.
+    Bạn là chuyên gia đánh giá phỏng vấn. Nhiệm vụ: Trích xuất các dẫn chứng cụ thể từ câu trả lời của ứng viên.
 
     --- NGỮ CẢNH ---
-    Chủ đề đang hỏi: {topic_name}
-    Câu hỏi của Interviewer: {interviewer_question}
-    Câu trả lời của Ứng viên: {candidate_answer}
+    Chủ đề: {topic_name}
+    Câu hỏi Interviewer: {interviewer_question}
+    Câu trả lời Ứng viên: {candidate_answer}
 
     --- QUY TẮC ---
-    1. Chỉ trích xuất sự thật, không tự suy diễn thêm kỹ năng nếu ứng viên không nói.
-    2. Nếu ứng viên nói "Tôi không biết" hoặc trả lời lan man không vào trọng tâm, hãy đánh dấu is_off_topic = True và để key_points rỗng.
-    3. Trả về đúng định dạng JSON yêu cầu.
+    1. Chỉ trích xuất sự thật — KHÔNG suy diễn thêm kỹ năng nếu ứng viên không đề cập.
+    2. Nếu ứng viên trả lời lạc đề hoặc "Tôi không biết" → is_off_topic = true, key_points rỗng.
+    3. key_points: Mỗi điểm là 1 câu ngắn, cụ thể (công nghệ, thành tích, quyết định, con số).
+    4. Trả về JSON theo schema yêu cầu.
     """
 )
 
 SCORING_PROMPT = ChatPromptTemplate.from_template(
     """
-    Bạn là một Giám khảo Phỏng vấn (Technical Assessor) công tâm và khắt khe.
-    Nhiệm vụ của bạn là chấm điểm năng lực của ứng viên cho một chủ đề cụ thể, bằng cách đối chiếu các "Bằng chứng đã trích xuất" với "Yêu cầu công việc (JD)".
+    Bạn là Giám khảo Kỹ thuật (Technical Assessor) công tâm và chuyên nghiệp.
+    Chấm điểm năng lực ứng viên cho 1 chủ đề, dựa trên bằng chứng trích xuất VÀ lịch sử hội thoại.
 
-    --- NGỮ CẢNH ---
-    [Yêu cầu Công việc - JD]:
+    --- THÔNG TIN JD ---
     {jd_parsed}
 
-    [Chủ đề đang đánh giá]: {topic_name}
-    [Kỳ vọng của chủ đề]: {expected_outcome}
+    --- CHỦ ĐỀ ĐANG ĐÁNH GIÁ ---
+    Tên: {topic_name}
+    Kỳ vọng: {expected_outcome}
 
-    [Bằng chứng trích xuất từ ứng viên]:
+    --- BẰNG CHỨNG TRÍCH XUẤT ---
     {extracted_evidence}
 
-    --- THANG ĐIỂM (1-10) ---
-    - 1-3: Không có kinh nghiệm, trả lời sai kiến thức cốt lõi hoặc hoàn toàn lạc đề.
-    - 4-6: Nắm được lý thuyết bề nổi, thiếu kinh nghiệm thực tế hoặc trả lời chưa sâu.
-    - 7-8: Đáp ứng tốt yêu cầu thực tế, có dẫn chứng rõ ràng.
-    - 9-10: Xuất sắc, thể hiện tư duy hệ thống, hiểu sâu sắc vấn đề vượt mức kỳ vọng.
+    --- LỊCH SỬ HỘI THOẠI (để tham chiếu thêm) ---
+    {conversation_history}
 
-    --- QUY TẮC TUYỆT ĐỐI ---
-    1. Chỉ chấm điểm dựa trên [Bằng chứng trích xuất]. KHÔNG tự suy diễn, KHÔNG châm chước nếu ứng viên không đưa ra được dẫn chứng.
-    2. Lý do (reasoning) phải chỉ rõ ứng viên đạt được điểm nào của JD và thiếu điểm nào (Vui lòng viết NGẮN GỌN, tối đa 2-3 câu).
-    3. Trả về đúng định dạng JSON được yêu cầu, escape tất cả các dấu ngoặc kép bên trong chuỗi.
+    --- THANG ĐIỂM (1–10) ---
+    1–3: Không có kinh nghiệm, trả lời sai kiến thức cốt lõi hoặc hoàn toàn lạc đề.
+    4–5: Biết lý thuyết bề nổi, thiếu kinh nghiệm thực tế hoặc ví dụ cụ thể.
+    6–7: Đáp ứng tốt yêu cầu cơ bản, có dẫn chứng thực tế nhưng chưa sâu.
+    8–9: Đáp ứng xuất sắc, dẫn chứng rõ ràng, tư duy hệ thống.
+    10: Vượt trội, thể hiện expertise và insight vượt mức kỳ vọng của JD.
+
+    --- QUY TẮC ---
+    1. Chấm điểm DỰA TRÊN BẰNG CHỨNG. Không suy diễn nếu ứng viên không cung cấp.
+    2. Reasoning: Chỉ rõ điểm tốt + điểm thiếu so với JD (tối đa 3 câu, cụ thể).
+    3. Nếu ứng viên lạc đề → điểm 1–2.
+    4. Trả về JSON đúng schema, escape tất cả dấu ngoặc kép trong chuỗi.
     """
 )
 
 FOLLOWUP_PROMPT = ChatPromptTemplate.from_template(
     """
-    Bạn là người phỏng vấn. Ứng viên vừa trả lời một câu hỏi nhưng chưa đủ ý.
-    Hãy đặt MỘT câu hỏi phụ (follow-up) để khai thác thêm.
+    Bạn là Interviewer. Ứng viên vừa trả lời chưa đủ chiều sâu.
+    Đặt MỘT câu hỏi follow-up để khai thác thêm.
 
     --- NGỮ CẢNH ---
     Chủ đề: {topic_name}
-    Câu trả lời gần nhất của ứng viên: {last_answer}
-    
-    Vấn đề cần làm rõ (Lý do chưa đạt điểm tối đa): 
-    {reasoning}
+    Câu trả lời gần nhất: {last_answer}
+    Vấn đề cần làm rõ (lý do chưa đạt điểm cao): {reasoning}
 
     --- QUY TẮC ---
-    1. Đặt câu hỏi trực diện, xoáy sâu vào phần "Vấn đề cần làm rõ".
-    2. Nếu ứng viên đang bế tắc, hãy đặt câu hỏi gợi mở nhẹ nhàng.
-    3. Trả về đúng văn bản câu hỏi, không giải thích.
+    1. Xoáy thẳng vào "Vấn đề cần làm rõ" — không hỏi lại điều ứng viên đã trả lời rõ.
+    2. Nếu ứng viên đang bế tắc, đặt câu hỏi gợi mở nhẹ nhàng hơn.
+    3. Trả về đúng câu hỏi, không giải thích, không JSON.
     """
 )
 
-
 REPORT_PROMPT = ChatPromptTemplate.from_template(
     """
-    Bạn là một Giám đốc Kỹ thuật (Technical Director) và một Mentor tận tâm.
-    Buổi phỏng vấn kỹ thuật đã kết thúc. Nhiệm vụ của bạn là tổng hợp bảng điểm từ các Giám khảo và viết một Báo cáo Đánh giá (Performance Review) cực kỳ chi tiết, mang tính xây dựng cao.
+    Bạn là Giám đốc Kỹ thuật (Technical Director) kiêm Mentor tận tâm.
+    Buổi phỏng vấn đã kết thúc. Viết Báo cáo Đánh giá chi tiết, mang tính xây dựng.
 
-    --- THÔNG TIN YÊU CẦU (JOB DESCRIPTION) ---
+    --- THÔNG TIN JD ---
     {jd_parsed}
 
-    --- DỮ LIỆU ĐÁNH GIÁ TỪNG CHỦ ĐỀ ---
+    --- KẾT QUẢ TỪNG CHỦ ĐỀ ---
     {evaluation_summary}
 
-    --- QUY TẮC ĐÁNH GIÁ VÀ TẠO BÁO CÁO ---
-    1. Tính điểm trung bình (overall_score) một cách khách quan dựa trên điểm của các chủ đề.
-    2. Đưa ra phán quyết (Pass/Fail/Consider) dựa trên mức độ phù hợp với JD.
-    3. Nhận xét (feedback) cho từng chủ đề phải rành mạch: Chỉ ra đúng bằng chứng ứng viên đã nói gì tốt, thiếu gì.
-    4. Phần `learning_path` là quan trọng nhất: Phải đưa ra lời khuyên cụ thể (Ví dụ: Thay vì nói "Học thêm Redux", hãy nói "Cần tìm hiểu cách Redux Toolkit xử lý side effect với createAsyncThunk").
-    5. Trả về đúng định dạng JSON yêu cầu.
+    --- NGƯỠNG PHÁN QUYẾT ---
+    - Pass (Đạt): Điểm trung bình ≥ 7.0 VÀ không có chủ đề nào dưới 4.
+    - Consider (Cân nhắc): Điểm trung bình 5.0–6.9 HOẶC có 1 chủ đề dưới 4 nhưng các chủ đề còn lại tốt.
+    - Fail (Không đạt): Điểm trung bình < 5.0 HOẶC có từ 2 chủ đề trở lên dưới 4.
+
+    --- QUY TẮC BÁO CÁO ---
+    1. `overall_score`: Tính trung bình cộng khách quan từ điểm các chủ đề.
+    2. `final_decision`: Áp dụng ngưỡng phán quyết ở trên một cách nhất quán.
+    3. `executive_summary`: 3–4 câu tóm tắt tổng thể, so sánh với yêu cầu JD và cấp bậc.
+    4. `topic_evaluations[].feedback`: Chỉ rõ ứng viên ĐÃ NÓI GÌ tốt và THIẾU GÌ — không chung chung.
+    5. `learning_path`: Lời khuyên CỤ THỂ (VD: không "học thêm Redux" mà "tìm hiểu cách Redux Toolkit xử lý side effect với createAsyncThunk").
+    6. Trả về JSON đúng schema yêu cầu.
     """
 )

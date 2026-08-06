@@ -44,10 +44,33 @@ class MongoDBClient:
         return str(result.inserted_id)
 
     @classmethod
+    async def ensure_indexes(cls) -> None:
+        """Tạo indexes khi khởi động server — chạy 1 lần, idempotent."""
+        db = cls.get_db()
+        await db["cv_documents"].create_index([("_id", 1)])
+        await db["cv_documents"].create_index([("task_id", 1)])
+        await db["jd_documents"].create_index([("_id", 1)])
+        await db["jd_documents"].create_index([("task_id", 1)])
+        logger.info("✔ MongoDB indexes đã được tạo")
+
+    @classmethod
     async def get_all_cvs(cls) -> list:
         db = cls.get_db()
-        cursor = db["cv_documents"].find({}, {"full_name": 1, "original_file_path": 1, "created_at": 1}).sort("_id", -1)
-        return [{"id": str(doc["_id"]), "name": doc.get("full_name") or doc.get("original_file_path", "Unknown")} async for doc in cursor]
+        # Lấy cả candidate_info lẫn original_file_path để có tên hiển thị đúng
+        cursor = db["cv_documents"].find(
+            {},
+            {"candidate_info": 1, "original_file_path": 1, "created_at": 1}
+        ).sort("_id", -1)
+        result = []
+        async for doc in cursor:
+            # Thử lấy full_name từ candidate_info trước, fallback về file path
+            candidate_info = doc.get("candidate_info") or {}
+            name = (
+                candidate_info.get("full_name")
+                or doc.get("original_file_path", "Unknown")
+            )
+            result.append({"id": str(doc["_id"]), "name": name})
+        return result
 
     @classmethod
     async def get_cv_by_id(cls, cv_id: str) -> dict:
@@ -72,4 +95,54 @@ class MongoDBClient:
         if doc:
             doc["_id"] = str(doc["_id"])
         return doc
+
+    @classmethod
+    async def update_cv(cls, cv_id: str, cv_data: dict) -> bool:
+        """Cập nhật dữ liệu CV."""
+        from bson.objectid import ObjectId
+        db = cls.get_db()
+        
+        # Bỏ đi _id và id nếu có trong data update để tránh lỗi Mongo
+        update_data = cv_data.copy()
+        update_data.pop("_id", None)
+        update_data.pop("id", None)
+        
+        result = await db["cv_documents"].update_one(
+            {"_id": ObjectId(cv_id)},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
+
+    @classmethod
+    async def update_jd(cls, jd_id: str, jd_data: dict) -> bool:
+        """Cập nhật dữ liệu JD."""
+        from bson.objectid import ObjectId
+        db = cls.get_db()
+        
+        # Bỏ đi _id và id nếu có trong data update để tránh lỗi Mongo
+        update_data = jd_data.copy()
+        update_data.pop("_id", None)
+        update_data.pop("id", None)
+        
+        result = await db["jd_documents"].update_one(
+            {"_id": ObjectId(jd_id)},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
+
+    @classmethod
+    async def delete_cv(cls, cv_id: str) -> bool:
+        """Xóa một CV khỏi MongoDB."""
+        from bson.objectid import ObjectId
+        db = cls.get_db()
+        result = await db["cv_documents"].delete_one({"_id": ObjectId(cv_id)})
+        return result.deleted_count > 0
+
+    @classmethod
+    async def delete_jd(cls, jd_id: str) -> bool:
+        """Xóa một JD khỏi MongoDB."""
+        from bson.objectid import ObjectId
+        db = cls.get_db()
+        result = await db["jd_documents"].delete_one({"_id": ObjectId(jd_id)})
+        return result.deleted_count > 0
 
